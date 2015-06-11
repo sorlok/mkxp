@@ -92,6 +92,8 @@ public:
 
 	bool getFullscreen() const;
 	bool getShowCursor() const;
+	int getDisplayWidth() const;
+	int getDisplayHeight() const;
 
 	void showMessageBox(const char *body, int flags = 0);
 

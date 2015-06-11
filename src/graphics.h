@@ -41,6 +41,8 @@ public:
 	                int vague = 40);
 	void frameReset();
 
+        void moveResizeRaise(int x, int y, int w, int h);
+
 	DECL_ATTR( FrameRate,  int )
 	DECL_ATTR( FrameCount, int )
 	DECL_ATTR( Brightness, int )
@@ -60,6 +62,8 @@ public:
 	/* Non-standard extension */
 	DECL_ATTR( Fullscreen, bool )
 	DECL_ATTR( ShowCursor, bool )
+	DECL_ATTR( DisplayWidth, int )
+	DECL_ATTR( DisplayHeight, int )
 
 	/* <internal> */
 	Scene *getScreen() const;

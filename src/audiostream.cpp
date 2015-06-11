@@ -28,6 +28,8 @@
 #include <SDL_thread.h>
 #include <SDL_timer.h>
 
+#include <iostream>
+
 AudioStream::AudioStream(ALStream::LoopMode loopMode,
                          const std::string &threadId)
 	: extPaused(false),
@@ -79,7 +81,6 @@ void AudioStream::play(const std::string &filename,
                        float offset)
 {
 	finiFadeOutInt();
-
 	lockStream();
 
 	float _volume = clamp<int>(volume, 0, 100) / 100.f;
@@ -153,10 +154,11 @@ void AudioStream::play(const std::string &filename,
 	current.volume = _volume;
 	current.pitch = _pitch;
 
-	if (!extPaused)
+	if (!extPaused) {
 		stream.play(offset);
-	else
+	} else {
 		noResumeStop = false;
+        }
 
 	unlockStream();
 }

@@ -595,6 +595,20 @@ bool EventThread::getShowCursor() const
 	return showCursor;
 }
 
+int EventThread::getDisplayWidth() const
+{
+	SDL_DisplayMode mode;
+	SDL_GetDisplayMode(0, 0, &mode);
+	return mode.w;
+}
+
+int EventThread::getDisplayHeight() const
+{
+	SDL_DisplayMode mode;
+	SDL_GetDisplayMode(0, 0, &mode);
+	return mode.h;
+}
+
 void EventThread::notifyFrame()
 {
 	if (!fps.sendUpdates)

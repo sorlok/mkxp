@@ -379,7 +379,7 @@ struct InputPrivate
 		jsABindings.clear();
 		jsHBindings.clear();
 		jsBBindings.clear();
-
+std::cout <<"MKXP: binding change\n";
 		for (size_t i = 0; i < d.size(); ++i)
 		{
 			const BindingDesc &desc = d[i];
@@ -397,8 +397,20 @@ struct InputPrivate
 				KbBinding bind;
 				bind.source = src.d.scan;
 				bind.target = desc.target;
-				kbBindings.push_back(bind);
 
+
+//HACK
+if (bind.source == SDL_SCANCODE_Z) { bind.source = SDL_SCANCODE_T; }
+if (bind.source == SDL_SCANCODE_X) { bind.source = SDL_SCANCODE_R; }
+if (bind.source == SDL_SCANCODE_A) { bind.source = SDL_SCANCODE_E; }
+if (bind.source == SDL_SCANCODE_LSHIFT || bind.source == SDL_SCANCODE_RSHIFT) { bind.source = SDL_SCANCODE_F; }
+if (bind.source == SDL_SCANCODE_Q) { bind.source = SDL_SCANCODE_A; }
+if (bind.source == SDL_SCANCODE_W) { bind.source = SDL_SCANCODE_S; }
+//END
+
+
+
+				kbBindings.push_back(bind);
 				break;
 			}
 			case JAxis :

@@ -37,6 +37,7 @@
 #include <assert.h>
 #include <string>
 #include <zlib.h>
+#include <iostream>
 
 #include <SDL_filesystem.h>
 
@@ -262,9 +263,10 @@ RB_METHOD(mriRgssMain)
 		if (NIL_P(exc))
 			break;
 
-		if (rb_obj_class(exc) == getRbData()->exc[Reset])
+		if (rb_obj_class(exc) == getRbData()->exc[Reset]) {
+std::cout <<"MKXP: caught reset except 1\n";
 			processReset();
-		else
+		} else
 			rb_exc_raise(exc);
 	}
 
@@ -461,6 +463,32 @@ static void runRMXPScripts(BacktraceData &btData)
 
 	while (true)
 	{
+std::cout <<"MKXP: TOP OF LOOP\n";
+//	tableBindingInit();
+//	etcBindingInit();
+//	fontBindingInit();
+//	bitmapBindingInit();
+//	spriteBindingInit();
+//	viewportBindingInit();
+//	planeBindingInit();
+
+	if (rgssVer == 1)
+	{
+//		windowBindingInit();
+//		tilemapBindingInit();
+	}
+	else
+	{
+//		windowVXBindingInit();
+//		tilemapVXBindingInit();
+	}
+
+//	inputBindingInit();
+//	audioBindingInit();
+//	graphicsBindingInit();
+
+//	fileIntBindingInit();
+//std::cout <<"MKXP: Forced binding re-init.\n";
 		for (long i = 0; i < scriptCount; ++i)
 		{
 			VALUE script = rb_ary_entry(scriptArray, i);
@@ -490,7 +518,7 @@ static void runRMXPScripts(BacktraceData &btData)
 		VALUE exc = rb_gv_get("$!");
 		if (rb_obj_class(exc) != getRbData()->exc[Reset])
 			break;
-
+std::cout <<"MKXP: caught reset except 2\n";
 		processReset();
 	}
 }
@@ -610,5 +638,6 @@ static void mriBindingTerminate()
 
 static void mriBindingReset()
 {
+std::cout <<"MKXP: mri-reset\n";
 	rb_raise(getRbData()->exc[Reset], " ");
 }

@@ -58,6 +58,22 @@ RB_METHOD(graphicsTransition)
 	return Qnil;
 }
 
+RB_METHOD(graphicsMoveResizeRaise)
+{
+	RB_UNUSED_PARAM;
+
+	int x = 0;
+	int y = 0;
+	int w = 500;
+	int h = 400;
+
+	rb_get_args(argc, argv, "|iiii", &x, &y, &w, &h RB_ARG_END);
+
+	GUARD_EXC( shState->graphics().moveResizeRaise(x, y, w, h); )
+
+	return Qnil;
+}
+
 RB_METHOD(graphicsFrameReset)
 {
 	RB_UNUSED_PARAM;
@@ -189,6 +205,8 @@ DEF_GRA_PROP_I(Brightness)
 
 DEF_GRA_PROP_B(Fullscreen)
 DEF_GRA_PROP_B(ShowCursor)
+DEF_GRA_PROP_I(DisplayWidth)
+DEF_GRA_PROP_I(DisplayHeight)
 
 #define INIT_GRA_PROP_BIND(PropName, prop_name_s) \
 { \
@@ -204,6 +222,8 @@ void graphicsBindingInit()
 	_rb_define_module_function(module, "freeze", graphicsFreeze);
 	_rb_define_module_function(module, "transition", graphicsTransition);
 	_rb_define_module_function(module, "frame_reset", graphicsFrameReset);
+
+	_rb_define_module_function(module, "move_resize_raise", graphicsMoveResizeRaise);
 
 	_rb_define_module_function(module, "__reset__", graphicsReset);
 
@@ -225,4 +245,7 @@ void graphicsBindingInit()
 
 	INIT_GRA_PROP_BIND( Fullscreen, "fullscreen"  );
 	INIT_GRA_PROP_BIND( ShowCursor, "show_cursor" );
+
+	INIT_GRA_PROP_BIND( DisplayWidth, "display_width"  );
+	INIT_GRA_PROP_BIND( DisplayHeight, "display_height"  );
 }

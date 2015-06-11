@@ -1056,6 +1056,9 @@ void Bitmap::drawText(const IntRect &rect, const char *str, int align)
 
 	bool fastBlit = !p->touchesTaintedArea(posRect) && txtAlpha == 1.0;
 
+//NOTE: Fastblit fails on my i3, for curious reasons.
+fastBlit = false;
+
 	if (fastBlit)
 	{
 		if (squeeze == 1.0 && !shState->config().subImageFix)
@@ -1075,6 +1078,7 @@ void Bitmap::drawText(const IntRect &rect, const char *str, int align)
 			txtRect.y = posRect.y;
 			txtRect.w = posRect.w;
 			txtRect.h = posRect.h;
+//std::cout <<"    MESSAGE-fast-blit: " <<btmRect.w <<"," <<btmRect.h <<" : " <<txtRect.x <<"," <<txtRect.y <<"," <<txtRect.w <<"," <<txtRect.h <<"\n";
 
 			SDL_Rect inters;
 
@@ -1082,11 +1086,13 @@ void Bitmap::drawText(const IntRect &rect, const char *str, int align)
 			 * there's nothing to upload to begin with */
 			if (SDL_IntersectRect(&btmRect, &txtRect, &inters))
 			{
+
 				bool subImage = false;
 				int subSrcX = 0, subSrcY = 0;
 
 				if (inters.w != txtRect.w || inters.h != txtRect.h)
 				{
+
 					/* Clip the text surface */
 					subSrcX = inters.x - txtRect.x;
 					subSrcY = inters.y - txtRect.y;
@@ -1102,12 +1108,14 @@ void Bitmap::drawText(const IntRect &rect, const char *str, int align)
 
 				if (!subImage)
 				{
+
 					TEX::uploadSubImage(posRect.x, posRect.y,
 					                    posRect.w, posRect.h,
 					                    txtSurf->pixels, GL_RGBA);
 				}
 				else
 				{
+
 					GLMeta::subRectImageUpload(txtSurf->w, subSrcX, subSrcY,
 					                           posRect.x, posRect.y,
 					                           posRect.w, posRect.h,

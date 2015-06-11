@@ -29,17 +29,18 @@
 #include "config.h"
 
 #include <string>
+#include <iostream>
 #include <utility>
 
 #include <SDL_ttf.h>
 
-#define BUNDLED_FONT liberation
+#define BUNDLED_FONT verdana
 
 #define BUNDLED_FONT_DECL(FONT) \
 	extern unsigned char assets_##FONT##_ttf[]; \
 	extern unsigned int assets_##FONT##_ttf_len;
 
-BUNDLED_FONT_DECL(liberation)
+BUNDLED_FONT_DECL(verdana)
 
 #define BUNDLED_FONT_D(f) assets_## f ##_ttf
 #define BUNDLED_FONT_L(f) assets_## f ##_ttf_len
@@ -132,9 +133,11 @@ void SharedFontState::initFontSetCB(SDL_RWops &ops,
 _TTF_Font *SharedFontState::getFont(std::string family,
                                     int size)
 {
+//std::cout <<"Getting 1: " <<family <<"\n";
 	/* Check for substitutions */
 	if (p->subs.contains(family))
 		family = p->subs[family];
+//std::cout <<"  Getting 2: " <<family <<"\n";
 
 	/* Find out if the font asset exists */
 	const FontSet &req = p->sets[family];
@@ -144,6 +147,7 @@ _TTF_Font *SharedFontState::getFont(std::string family,
 		/* Doesn't exist; use built-in font */
 		family = "";
 	}
+//std::cout <<"  Getting 3: " <<family <<"\n";
 
 	FontKey key(family, size);
 
@@ -151,6 +155,7 @@ _TTF_Font *SharedFontState::getFont(std::string family,
 
 	if (font)
 		return font;
+//std::cout <<"  Getting 4:  FAIL \n";
 
 	/* Not in pool; open new handle */
 	SDL_RWops *ops;
@@ -174,7 +179,9 @@ _TTF_Font *SharedFontState::getFont(std::string family,
 	// FIXME 0.9 is guesswork at this point
 //	float gamma = (96.0/45.0)*(5.0/14.0)*(size-5);
 //	font = TTF_OpenFontRW(ops, 1, gamma /** .90*/);
-	font = TTF_OpenFontRW(ops, 1, size* .90);
+
+//	font = TTF_OpenFontRW(ops, 1, size* .90);
+	font = TTF_OpenFontRW(ops, 1, size* 0.80);
 
 	if (!font)
 		throw Exception(Exception::SDLError, "%s", SDL_GetError());

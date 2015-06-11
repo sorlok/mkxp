@@ -235,6 +235,7 @@ set(EMBEDDED_INPUT
 	shader/blurV.vert
 	shader/simpleMatrix.vert
 	assets/liberation.ttf
+	assets/verdana.ttf
 	assets/icon.png
 )
 
@@ -287,7 +288,7 @@ source_group("Embedded Source" FILES ${EMBEDDED_INPUT} ${EMBEDDED_SOURCE})
 ## Setup binding source ##
 
 if (BINDING STREQUAL "MRI")
-	set(MRIVERSION "2.1" CACHE STRING "Version of MRI to link with")
+	set(MRIVERSION "2.2" CACHE STRING "Version of MRI to link with")
 	pkg_check_modules(MRI REQUIRED ruby-${MRIVERSION})
 	list(APPEND DEFINES
 		BINDING_MRI
@@ -408,6 +409,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	${SIGCXX_INCLUDE_DIRS}
 	${PIXMAN_INCLUDE_DIRS}
 	${PHYSFS_INCLUDE_DIRS}
+        "/usr/local/include/SDL2"
 	${SDL2_INCLUDE_DIRS} # Blindly assume other SDL bits are in same directory
 	${Boost_INCLUDE_DIR}
 	${MRI_INCLUDE_DIRS}
@@ -432,6 +434,7 @@ target_link_libraries(${PROJECT_NAME}
 	${ZLIB_LIBRARY}
 
 	${PLATFORM_LIBRARIES}
+	/usr/local/lib/libruby-static.a
 )
 
 PostBuildMacBundle(${PROJECT_NAME} "" "${PLATFORM_COPY_LIBS}")

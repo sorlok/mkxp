@@ -819,6 +819,13 @@ void Graphics::frameReset()
 	p->fpsLimiter.resetFrameAdjust();
 }
 
+void Graphics::moveResizeRaise(int x, int y, int w, int h)
+{
+	SDL_SetWindowPosition(p->threadData->window, x, y);
+	SDL_SetWindowSize(p->threadData->window, w, h);
+	SDL_RaiseWindow(p->threadData->window);
+}
+
 static void guardDisposed() {}
 
 DEF_ATTR_RD_SIMPLE(Graphics, FrameRate, int, p->frameRate)
@@ -1001,6 +1008,28 @@ bool Graphics::getFullscreen() const
 void Graphics::setFullscreen(bool value)
 {
 	p->threadData->ethread->requestFullscreenMode(value);
+}
+
+int Graphics::getDisplayWidth() const
+{
+	return p->threadData->ethread->getDisplayWidth();
+}
+
+void Graphics::setDisplayWidth(int value)
+{
+	//TODO
+	//p->threadData->ethread->requestFullscreenMode(value);
+}
+
+int Graphics::getDisplayHeight() const
+{
+	return p->threadData->ethread->getDisplayHeight();
+}
+
+void Graphics::setDisplayHeight(int value)
+{
+	//TODO
+	//p->threadData->ethread->requestFullscreenMode(value);
 }
 
 bool Graphics::getShowCursor() const

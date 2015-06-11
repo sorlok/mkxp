@@ -27,6 +27,8 @@
 #include "binding-util.h"
 #include "binding-types.h"
 
+#include <iostream>
+
 DEF_TYPE(Bitmap);
 
 static const char *objAsStringPtr(VALUE obj)
@@ -273,6 +275,9 @@ RB_METHOD(bitmapDrawText)
 
 		rect = getPrivateDataCheck<Rect>(rectObj, RectType);
 
+//TEMP
+//std::cout <<"    MESSAGE-internal-draw1\n";
+
 		GUARD_EXC( b->drawText(rect->toIntRect(), str, align); );
 	}
 	else
@@ -290,6 +295,9 @@ RB_METHOD(bitmapDrawText)
 		{
 			rb_get_args(argc, argv, "iiiiz|i", &x, &y, &width, &height, &str, &align RB_ARG_END);
 		}
+
+//TEMP:
+//std::cout <<"    MESSAGE-internal-draw: " <<x <<"," <<y <<"," <<width <<"," <<height <<"," <<str <<"," <<align <<"\n";
 
 		GUARD_EXC( b->drawText(x, y, width, height, str, align); );
 	}

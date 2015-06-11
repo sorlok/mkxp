@@ -28,6 +28,7 @@
 #include "eventthread.h"
 #include "sdl-util.h"
 
+#include <iostream>
 #include <string>
 
 #include <SDL_thread.h>
@@ -247,6 +248,11 @@ void Audio::bgmPlay(const char *filename,
                     int pitch,
                     float pos)
 {
+//std::cout <<"Trying to play BGM: " <<filename <<"\n";
+//for (int i=0; i<strlen(filename); i++) {
+//std::cout <<"  " <<filename[i] <<" (" <<int(filename[i]) <<")\n";
+//}
+
 	p->bgm.play(filename, volume, pitch, pos);
 }
 
