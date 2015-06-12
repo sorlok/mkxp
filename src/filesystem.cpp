@@ -35,12 +35,130 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <fstream>
+#include <sstream>
 #include <algorithm>
 #include <vector>
 
 #ifdef __APPLE__
 #include <iconv.h>
 #endif
+
+//Generic reader/writer for profile strings.
+//"value" is either "defValue" (if reading) or the value to write.
+//returns NULL on write; a new string on read (assuming no error).
+const char* pp_read_write(bool write, std::string section, std::string key, std::string value, const char* filePath)
+{
+	//Make the file if it doesn't exist.
+	{
+	std::ifstream f(filePath);
+	if (!f.good()) {
+		std::ofstream out(filePath);
+		if (!out.good()) {
+			return value.c_str();
+		}
+	}
+	}
+
+	//Open the file for reading.
+	std::ifstream f(filePath);
+	if (!f.good()) { return value.c_str(); }
+
+	//Stores the current section.
+	std::string currSection = "";
+	bool foundSection = false;
+	bool foundProp = false;
+
+	//Read each line, buffering it to the output stream if appropriate.
+	std::stringstream buff;
+	std::string line;
+	while (std::getline(f, line)) {
+		//Trim (L+R)
+		line.erase(line.find_last_not_of(" \t\r\n") + 1);
+		line.erase(0, line.find_first_not_of(" \t\r\n"));
+
+		//React to it (required in both cases).
+		if (!line.empty()) {
+			if (line[0]=='[' && line[line.size()-1]==']') {
+				//Are we leaving the section without finding our property?
+				if (write && currSection==section && !foundProp) {
+					buff <<key <<"=" <<value <<"\n";
+				}
+
+				//Track it.
+				currSection = line.substr(1, line.size()-2);
+				if (currSection==section) {
+					foundSection = true;
+				}
+			} else {
+				size_t eq = line.find('=');
+				if (eq != std::string::npos) {
+					//It's a property. 
+					std::string lhs = line.substr(0,eq);
+					std::string rhs = line.substr(eq+1, std::string::npos);
+					if (currSection==section && lhs==key) {
+						if (write) {
+							//Writing: re-write if we've found our string.
+							line = lhs + "=" + value;
+							foundProp = true;
+						} else {
+							//Reading: we can return early if this is what we're looking for.
+							return rhs.c_str(); //TODO: I think Ruby takes ownership...
+						}
+					}
+				}
+			}
+		}
+
+		//Either way, append the line (in write mode).
+		if (write) {
+			buff <<line <<"\n";
+		}
+	}
+	f.close();
+
+	if (write) {
+		//Write the updated file.
+		std::ofstream out(filePath);
+		if (out.good()) {
+			out <<buff.str();
+
+			//Did we not encounter the section at all?
+			if (!foundSection) {
+				out <<"[" <<section <<"]\n";
+				out <<key <<"=" <<value <<"\n";
+			}
+
+			//Did we find the section, but not the property?
+			if (currSection==section && !foundProp) {
+				out <<key <<"=" <<value <<"\n";
+			}
+		}
+		return value.c_str();
+	} else {
+		//Return the default value.
+		return value.c_str();
+	}
+}
+
+//These vaguely mimic the Windows ini functions. They are designed to be as simple as possible, and don't handle anything that reacts to a null pointer.
+const char* GetPPString(const char* section, const char* key, const char* defValue, const char* filePath)
+{
+	//Null path?
+	if (!filePath) { return NULL; }
+
+	//Now, use our generic reader/writer function, converting strings as you go.
+	return pp_read_write(false, (section?section:""), (key?key:""), (defValue?defValue:""), filePath);
+}
+void WritePPString(const char* section, const char* key, const char* value, const char* filePath)
+{
+	//Null path?
+	if (!filePath) { return; }
+
+	//Now, use our generic reader/writer function, converting strings as you go.
+	pp_read_write(true, (section?section:""), (key?key:""), (value?value:""), filePath);
+}
+
 
 struct SDLRWIoContext
 {

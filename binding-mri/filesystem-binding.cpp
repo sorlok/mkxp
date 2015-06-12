@@ -206,9 +206,52 @@ RB_METHOD(_marshalLoad)
 	return rb_funcall2(marsh, rb_intern("_mkxp_load_alias"), ARRAY_SIZE(v), v);
 }
 
+RB_METHOD(ppGetString)
+{
+	RB_UNUSED_PARAM;
+
+        //These are all required (we don't follow the weird Windows specification)
+	const char* section = "";
+	const char* key = "";
+	const char* defValue = "";
+	const char* filePath = "";
+
+	rb_get_args(argc, argv, "zzzz|", &section, &key, &defValue, &filePath RB_ARG_END);
+
+        const char* res = NULL;
+	GUARD_EXC( res = GetPPString(section, key, defValue, filePath); )
+
+	return rb_str_new_cstr(res?res:"");
+}
+
+RB_METHOD(ppWriteString)
+{
+	RB_UNUSED_PARAM;
+
+        //These are all required (we don't follow the weird Windows specification)
+	const char* section = "";
+	const char* key = "";
+	const char* value = "";
+	const char* filePath = "";
+
+	rb_get_args(argc, argv, "zzzz|", &section, &key, &value, &filePath RB_ARG_END);
+
+	GUARD_EXC( WritePPString(section, key, value, filePath); )
+
+	return Qnil;
+}
+
 void
 fileIntBindingInit()
 {
+	//Special module: PrivateProfile
+	{
+	VALUE module = rb_define_module("PrivateProfile");
+	_rb_define_module_function(module, "get_string", ppGetString);
+	_rb_define_module_function(module, "write_string", ppWriteString);
+	}
+
+
 	VALUE klass = rb_define_class("FileInt", rb_cIO);
 	rb_define_alloc_func(klass, classAllocate<&FileIntType>);
 

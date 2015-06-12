@@ -27,6 +27,10 @@
 struct FileSystemPrivate;
 class SharedFontState;
 
+//Helper functions for Ini-Style file handling.
+const char* GetPPString(const char* section, const char* key, const char* defValue, const char* filePath);
+void WritePPString(const char* section, const char* key, const char* value, const char* filePath);
+
 class FileSystem
 {
 public:
