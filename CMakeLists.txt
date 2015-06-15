@@ -310,6 +310,7 @@ if (BINDING STREQUAL "MRI")
 		binding-mri/bitmap-binding.cpp
 		binding-mri/font-binding.cpp
 		binding-mri/graphics-binding.cpp
+		binding-mri/keys-binding.cpp
 		binding-mri/input-binding.cpp
 		binding-mri/sprite-binding.cpp
 		binding-mri/viewport-binding.cpp

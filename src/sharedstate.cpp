@@ -24,6 +24,7 @@
 #include "util.h"
 #include "filesystem.h"
 #include "graphics.h"
+#include "keys.h"
 #include "input.h"
 #include "audio.h"
 #include "glstate.h"
@@ -74,6 +75,7 @@ struct SharedStatePrivate
 	SharedMidiState midiState;
 
 	Graphics graphics;
+	Keys keys;
 	Input input;
 	Audio audio;
 
@@ -225,6 +227,7 @@ GSATT(EventThread&, eThread)
 GSATT(RGSSThreadData&, rtData)
 GSATT(Config&, config)
 GSATT(Graphics&, graphics)
+GSATT(Keys&, keys)
 GSATT(Input&, input)
 GSATT(Audio&, audio)
 GSATT(GLState&, _glState)

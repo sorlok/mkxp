@@ -400,12 +400,12 @@ std::cout <<"MKXP: binding change\n";
 
 
 //HACK
-if (bind.source == SDL_SCANCODE_Z) { bind.source = SDL_SCANCODE_T; }
+/*if (bind.source == SDL_SCANCODE_Z) { bind.source = SDL_SCANCODE_T; }
 if (bind.source == SDL_SCANCODE_X) { bind.source = SDL_SCANCODE_R; }
 if (bind.source == SDL_SCANCODE_A) { bind.source = SDL_SCANCODE_E; }
 if (bind.source == SDL_SCANCODE_LSHIFT || bind.source == SDL_SCANCODE_RSHIFT) { bind.source = SDL_SCANCODE_F; }
 if (bind.source == SDL_SCANCODE_Q) { bind.source = SDL_SCANCODE_A; }
-if (bind.source == SDL_SCANCODE_W) { bind.source = SDL_SCANCODE_S; }
+if (bind.source == SDL_SCANCODE_W) { bind.source = SDL_SCANCODE_S; }*/
 //END
 
 
