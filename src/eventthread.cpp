@@ -70,6 +70,7 @@ initALCFunctions(ALCdevice *alcDev)
 #define HAVE_ALC_DEVICE_PAUSE alc.DevicePause
 
 uint8_t EventThread::keyStates[];
+uint8_t EventThread::padStates[];
 EventThread::JoyState EventThread::joyState;
 EventThread::MouseState EventThread::mouseState;
 EventThread::TouchState EventThread::touchState;
@@ -328,6 +329,14 @@ void EventThread::process(RGSSThreadData &rtData)
 			}
 
 			keyStates[event.key.keysym.scancode] = false;
+			break;
+
+		//TODO: Might have to handle axis events too.
+		case SDL_CONTROLLERBUTTONDOWN :
+			padStates[event.cbutton.button] = true;
+			break;
+		case SDL_CONTROLLERBUTTONUP :
+			padStates[event.cbutton.button] = false;
 			break;
 
 		case SDL_JOYBUTTONDOWN :

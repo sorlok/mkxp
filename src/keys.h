@@ -6,6 +6,7 @@
 #define KEYS_H
 
 #include <SDL_scancode.h>
+#include <SDL_gamecontroller.h>
 #include "util.h"
 
 #include "eventthread.h"
@@ -17,11 +18,63 @@ struct RGSSThreadData;
 struct GraphicsPrivate;
 struct AtomicFlag;
 
+
+//TODO: It would be better to treat key repeats using similar code for GamePads and the Keyboard.
+class WolfPad
+{
+private:
+	//How long each button has been held down.
+	uint8_t holds[SDL_CONTROLLER_BUTTON_MAX] = {0};
+
+	bool validate(int button) {
+		//Basically, "will it crash anything"? If they want to check bogus keycodes, then by all means!
+		return button>=0 && button<SDL_CONTROLLER_BUTTON_MAX; 
+	}
+
+	int key_holds(int button) {
+		return holds[button];
+	}
+
+public:
+	void update() {
+		//Increment holds, cap.
+		for (size_t i=0; i<SDL_CONTROLLER_BUTTON_MAX; i++) {
+			if (EventThread::padStates[i]) {
+				holds[i] += 1;
+			} else {
+				holds[i] = 0;
+			}
+
+			//Prevent overflow.
+			if (holds[i]>49) {
+				holds[i] -= 10;
+			}
+		}
+		
+	}
+
+	//State check functions
+	bool isPress(int button) {
+		return validate(button) && key_holds(button)>0;
+	}
+	bool isTrigger(int button) {
+		return validate(button) && key_holds(button)==1;
+	}
+	bool isRepeat(int button) {
+		if (validate(button)) {
+			int result = key_holds(button);
+			return (result==1) || (result>30 && (result%5)==0);
+		}
+		return false;
+	}
+};
+
+
 class Keys
 {
 private:
 	//Copy of EventThread::keyStates the last time we checked it.
-	uint8_t lastKeyStates[SDL_NUM_SCANCODES];
+	uint8_t lastKeyStates[SDL_NUM_SCANCODES] = {0};
 
 	//State arrays
 	struct KeyState {
@@ -44,12 +97,12 @@ private:
 	}
 
 public:
-	void moduleInit() {
+	/*void moduleInit() {
 		memcpy(lastKeyStates, EventThread::keyStates, sizeof(lastKeyStates)*sizeof(uint8_t)); //TODO: Zeroing may be better...
 		for (size_t i=0; i<SDL_NUM_SCANCODES; i++) { //We could technically memset this...
 			states[i] = KeyState();
 		}
-	}
+	}*/
 
 	void update() {
 		//Clear
@@ -105,7 +158,12 @@ public:
 				if (states[i].press) { return true; }
 			}
 		}
-		return validate(key) && states[key].press;
+		if (!validate(key)) { return false; }
+		if (key==SDL_SCANCODE_LCTRL && states[SDL_SCANCODE_RCTRL].press) { return true; }
+		if (key==SDL_SCANCODE_LALT && states[SDL_SCANCODE_RALT].press) { return true; }
+		if (key==SDL_SCANCODE_LSHIFT && states[SDL_SCANCODE_RSHIFT].press) { return true; }
+		if (key==SDL_SCANCODE_LGUI && states[SDL_SCANCODE_RGUI].press) { return true; }
+		return  states[key].press;
 	}
 	bool isTrigger(int key) {
 		if (key==ANY_KEY) {
@@ -113,7 +171,12 @@ public:
 				if (states[i].trigger) { return true; }
 			}
 		}
-		return validate(key) && states[key].trigger;
+		if (!validate(key)) { return false; }
+		if (key==SDL_SCANCODE_LCTRL && states[SDL_SCANCODE_RCTRL].trigger) { return true; }
+		if (key==SDL_SCANCODE_LALT && states[SDL_SCANCODE_RALT].trigger) { return true; }
+		if (key==SDL_SCANCODE_LSHIFT && states[SDL_SCANCODE_RSHIFT].trigger) { return true; }
+		if (key==SDL_SCANCODE_LGUI && states[SDL_SCANCODE_RGUI].trigger) { return true; }
+		return  states[key].trigger;
 	}
 	bool isRepeat(int key) {
 		if (key==ANY_KEY) {
@@ -121,7 +184,12 @@ public:
 				if (states[i].repeat) { return true; }
 			}
 		}
-		return validate(key) && states[key].repeat;
+		if (!validate(key)) { return false; }
+		if (key==SDL_SCANCODE_LCTRL && states[SDL_SCANCODE_RCTRL].repeat) { return true; }
+		if (key==SDL_SCANCODE_LALT && states[SDL_SCANCODE_RALT].repeat) { return true; }
+		if (key==SDL_SCANCODE_LSHIFT && states[SDL_SCANCODE_RSHIFT].repeat) { return true; }
+		if (key==SDL_SCANCODE_LGUI && states[SDL_SCANCODE_RGUI].repeat) { return true; }
+		return  states[key].repeat;
 	}
 	bool isRelease(int key) {
 		if (key==ANY_KEY) {
@@ -129,7 +197,12 @@ public:
 				if (states[i].release) { return true; }
 			}
 		}
-		return validate(key) && states[key].release;
+		if (!validate(key)) { return false; }
+		if (key==SDL_SCANCODE_LCTRL && states[SDL_SCANCODE_RCTRL].release) { return true; }
+		if (key==SDL_SCANCODE_LALT && states[SDL_SCANCODE_RALT].release) { return true; }
+		if (key==SDL_SCANCODE_LSHIFT && states[SDL_SCANCODE_RSHIFT].release) { return true; }
+		if (key==SDL_SCANCODE_LGUI && states[SDL_SCANCODE_RGUI].release) { return true; }
+		return  states[key].release;
 	}	
 
 

@@ -29,6 +29,7 @@
 
 #include <SDL_scancode.h>
 #include <SDL_joystick.h>
+#include <SDL_gamecontroller.h>
 #include <SDL_mouse.h>
 #include <SDL_mutex.h>
 
@@ -72,6 +73,7 @@ public:
 	};
 
 	static uint8_t keyStates[SDL_NUM_SCANCODES];
+	static uint8_t padStates[SDL_CONTROLLER_BUTTON_MAX]; //Controller 1, for now.
 	static JoyState joyState;
 	static MouseState mouseState;
 	static TouchState touchState;

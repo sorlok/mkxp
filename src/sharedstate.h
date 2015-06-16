@@ -41,6 +41,7 @@ class FileSystem;
 class EventThread;
 class Graphics;
 class Keys;
+class WolfPad;
 class Input;
 class Audio;
 class GLState;
@@ -70,6 +71,7 @@ struct SharedState
 
 	Graphics &graphics() const;
 	Keys &keys() const;
+	WolfPad &wolfpad() const;
 	Input &input() const;
 	Audio &audio() const;
 

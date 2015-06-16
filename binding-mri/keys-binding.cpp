@@ -9,14 +9,14 @@
 #include "exception.h"
 
 
-RB_METHOD(keysModuleInit)
+/*RB_METHOD(keysModuleInit)
 {
 	RB_UNUSED_PARAM;
 
 	shState->keys().moduleInit();
 
 	return Qnil;
-}
+}*/
 
 RB_METHOD(keysUpdate)
 {
@@ -84,12 +84,93 @@ RB_METHOD(keysRelease)
 }
 
 
+RB_METHOD(wolfpadUpdate)
+{
+	RB_UNUSED_PARAM;
+
+	shState->wolfpad().update();
+
+	return Qnil;
+}
+
+RB_METHOD(wolfpadPress)
+{
+	RB_UNUSED_PARAM;
+
+	int key = 0;
+
+	rb_get_args(argc, argv, "i|", &key RB_ARG_END);
+
+	bool res = false;
+	GUARD_EXC( res = shState->wolfpad().isPress(key); )
+
+	return rb_bool_new(res);
+}
+
+RB_METHOD(wolfpadTrigger)
+{
+	RB_UNUSED_PARAM;
+
+	int key = 0;
+
+	rb_get_args(argc, argv, "i|", &key RB_ARG_END);
+
+	bool res = false;
+	GUARD_EXC( res = shState->wolfpad().isTrigger(key); )
+
+	return rb_bool_new(res);
+}
+
+RB_METHOD(wolfpadRepeat)
+{
+	RB_UNUSED_PARAM;
+
+	int key = 0;
+
+	rb_get_args(argc, argv, "i|", &key RB_ARG_END);
+
+	bool res = false;
+	GUARD_EXC( res = shState->wolfpad().isRepeat(key); )
+
+	return rb_bool_new(res);
+}
+
+
 
 void keysBindingInit()
 {
+	//Wolf Pad module
+	{
+	VALUE module = rb_define_module("WolfPad");
+
+	_rb_define_module_function(module, "update", wolfpadUpdate);
+	_rb_define_module_function(module, "press?", wolfpadPress);
+	_rb_define_module_function(module, "trigger?", wolfpadTrigger);
+	_rb_define_module_function(module, "repeat?", wolfpadRepeat);
+
+	rb_const_set(module, rb_intern("UP"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_DPAD_UP)));
+	rb_const_set(module, rb_intern("LEFT"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_DPAD_LEFT)));
+	rb_const_set(module, rb_intern("DOWN"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_DPAD_DOWN)));
+	rb_const_set(module, rb_intern("RIGHT"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_DPAD_RIGHT)));
+	rb_const_set(module, rb_intern("A"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_A)));
+	rb_const_set(module, rb_intern("B"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_B)));
+	rb_const_set(module, rb_intern("X"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_X)));
+	rb_const_set(module, rb_intern("Y"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_Y)));
+	rb_const_set(module, rb_intern("L1"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_LEFTSHOULDER)));
+	rb_const_set(module, rb_intern("R1"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)));
+	rb_const_set(module, rb_intern("START"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_START)));
+	rb_const_set(module, rb_intern("SELECT"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_BACK)));
+	rb_const_set(module, rb_intern("L3"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_LEFTSTICK)));
+	rb_const_set(module, rb_intern("R3"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_RIGHTSTICK)));
+
+	//TODO: These might actually be axis triggers.
+	//rb_const_set(module, rb_intern("L2"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_XXX)));
+	//rb_const_set(module, rb_intern("R2"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_XXX)));
+	}
+
 	VALUE module = rb_define_module("Keys");
 
-	_rb_define_module_function(module, "moduleInit", keysModuleInit);
+	//_rb_define_module_function(module, "moduleInit", keysModuleInit);
 	_rb_define_module_function(module, "update", keysUpdate);
 	_rb_define_module_function(module, "press?", keysPress);
 	_rb_define_module_function(module, "trigger?", keysTrigger);
@@ -102,10 +183,12 @@ void keysBindingInit()
 	rb_const_set(module, rb_intern("TAB"), rb_int_new(static_cast<int>(SDL_SCANCODE_TAB)));
 	rb_const_set(module, rb_intern("CLEAR"), rb_int_new(static_cast<int>(SDL_SCANCODE_CLEAR)));
 	rb_const_set(module, rb_intern("RETURN"), rb_int_new(static_cast<int>(SDL_SCANCODE_RETURN)));
-	rb_const_set(module, rb_intern("LSHIFT"), rb_int_new(static_cast<int>(SDL_SCANCODE_LSHIFT)));  //TODO: Need a separate "SHIFT" that represents "left and right shift together"
-	rb_const_set(module, rb_intern("RSHIFT"), rb_int_new(static_cast<int>(SDL_SCANCODE_RSHIFT)));  //     
-	rb_const_set(module, rb_intern("LCONTROL"), rb_int_new(static_cast<int>(SDL_SCANCODE_LCTRL)));  //TODO: Same here.
-	rb_const_set(module, rb_intern("RCONTROL"), rb_int_new(static_cast<int>(SDL_SCANCODE_RCTRL)));  //
+	//rb_const_set(module, rb_intern("LSHIFT"), rb_int_new(static_cast<int>(SDL_SCANCODE_LSHIFT)));  //TODO: Need a separate "SHIFT" that represents "left and right shift together"
+	//rb_const_set(module, rb_intern("RSHIFT"), rb_int_new(static_cast<int>(SDL_SCANCODE_RSHIFT)));  //     
+	//rb_const_set(module, rb_intern("LCONTROL"), rb_int_new(static_cast<int>(SDL_SCANCODE_LCTRL)));  //TODO: Same here.
+	//rb_const_set(module, rb_intern("RCONTROL"), rb_int_new(static_cast<int>(SDL_SCANCODE_RCTRL)));  //
+	//rb_const_set(module, rb_intern("LWIN"), rb_int_new(static_cast<int>(SDL_SCANCODE_LGUI)));
+	//rb_const_set(module, rb_intern("RWIN"), rb_int_new(static_cast<int>(SDL_SCANCODE_RGUI)));
 	rb_const_set(module, rb_intern("MENU"), rb_int_new(static_cast<int>(SDL_SCANCODE_MENU))); //TODO: Not the same as ALT?
 	rb_const_set(module, rb_intern("PAUSE"), rb_int_new(static_cast<int>(SDL_SCANCODE_PAUSE)));
 	rb_const_set(module, rb_intern("ESCAPE"), rb_int_new(static_cast<int>(SDL_SCANCODE_ESCAPE)));
@@ -128,8 +211,8 @@ void keysBindingInit()
 	//rb_const_set(module, rb_intern("RSHIFT"), rb_int_new(static_cast<int>(SDL_SCANCODE_RSHIFT)));
 	//rb_const_set(module, rb_intern("LCONTROL"), rb_int_new(static_cast<int>(SDL_SCANCODE_LCONTROL)));
 	//rb_const_set(module, rb_intern("RCONTROL"), rb_int_new(static_cast<int>(SDL_SCANCODE_RCONTROL)));
-	rb_const_set(module, rb_intern("LMENU"), rb_int_new(static_cast<int>(SDL_SCANCODE_LALT)));
-	rb_const_set(module, rb_intern("RMENU"), rb_int_new(static_cast<int>(SDL_SCANCODE_RALT)));
+	//rb_const_set(module, rb_intern("LMENU"), rb_int_new(static_cast<int>(SDL_SCANCODE_LALT)));
+	//rb_const_set(module, rb_intern("RMENU"), rb_int_new(static_cast<int>(SDL_SCANCODE_RALT)));
 	//rb_const_set(module, rb_intern("PACKET"), rb_int_new(static_cast<int>(SDL_SCANCODE_PACKET))); //Doesn't exist?
 
 	//Number keys
@@ -172,9 +255,11 @@ void keysBindingInit()
 	rb_const_set(module, rb_intern("Y"), rb_int_new(static_cast<int>(SDL_SCANCODE_Y)));
 	rb_const_set(module, rb_intern("Z"), rb_int_new(static_cast<int>(SDL_SCANCODE_Z)));
 
-	//Windows Keys (?)
-	rb_const_set(module, rb_intern("LWIN"), rb_int_new(static_cast<int>(SDL_SCANCODE_LGUI)));
-	rb_const_set(module, rb_intern("RWIN"), rb_int_new(static_cast<int>(SDL_SCANCODE_RGUI)));
+	//Multiplexed keys
+        rb_const_set(module, rb_intern("CTRL"), rb_int_new(static_cast<int>(SDL_SCANCODE_LCTRL)));    //L/R CTRL
+        rb_const_set(module, rb_intern("ALT"), rb_int_new(static_cast<int>(SDL_SCANCODE_LALT)));      //L/R ALT
+	rb_const_set(module, rb_intern("SHIFT"), rb_int_new(static_cast<int>(SDL_SCANCODE_LSHIFT)));  //L/R SHIFT
+	rb_const_set(module, rb_intern("WIN"), rb_int_new(static_cast<int>(SDL_SCANCODE_LGUI)));  //L/R WINDOWS
 
 	//Number pad keys
 	rb_const_set(module, rb_intern("NUMPAD0"), rb_int_new(static_cast<int>(SDL_SCANCODE_KP_0)));

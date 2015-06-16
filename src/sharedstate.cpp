@@ -76,6 +76,7 @@ struct SharedStatePrivate
 
 	Graphics graphics;
 	Keys keys;
+	WolfPad wolfpad;
 	Input input;
 	Audio audio;
 
@@ -228,6 +229,7 @@ GSATT(RGSSThreadData&, rtData)
 GSATT(Config&, config)
 GSATT(Graphics&, graphics)
 GSATT(Keys&, keys)
+GSATT(WolfPad&, wolfpad)
 GSATT(Input&, input)
 GSATT(Audio&, audio)
 GSATT(GLState&, _glState)
