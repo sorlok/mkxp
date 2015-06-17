@@ -192,9 +192,9 @@ void keysBindingInit()
 	rb_const_set(module, rb_intern("L3"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_LEFTSTICK)));
 	rb_const_set(module, rb_intern("R3"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_RIGHTSTICK)));
 
-	//TODO: These might actually be axis triggers.
-	//rb_const_set(module, rb_intern("L2"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_XXX)));
-	//rb_const_set(module, rb_intern("R2"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_XXX)));
+	//We cheat a bit to make these:
+	rb_const_set(module, rb_intern("L2"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_MAX)+1));
+	rb_const_set(module, rb_intern("R2"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_MAX)+2));
 	}
 
 	VALUE module = rb_define_module("Keys");

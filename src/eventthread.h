@@ -74,6 +74,7 @@ public:
 
 	static uint8_t keyStates[SDL_NUM_SCANCODES];
 	static uint8_t padStates[SDL_CONTROLLER_BUTTON_MAX]; //Controller 1, for now.
+	static int16_t padAxes[SDL_CONTROLLER_AXIS_MAX];     //Ditto
 	static JoyState joyState;
 	static MouseState mouseState;
 	static TouchState touchState;

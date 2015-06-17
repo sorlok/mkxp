@@ -44,44 +44,69 @@ class WolfPad
 private:
 	//How long each button has been held down.
 	uint8_t holds[SDL_CONTROLLER_BUTTON_MAX] = {0};
+	uint8_t holdsTrig[2] = {0}; //Trigger holds (L,R)
 
 	bool validate(int button) {
 		//Basically, "will it crash anything"? If they want to check bogus keycodes, then by all means!
 		return button>=0 && button<SDL_CONTROLLER_BUTTON_MAX; 
 	}
 
-	int key_holds(int button) {
-		return holds[button];
-	}
-
 public:
 	void update() {
-		//Increment holds, cap.
+		//Increment holds, cap to prevent overflow.
 		for (size_t i=0; i<SDL_CONTROLLER_BUTTON_MAX; i++) {
 			if (EventThread::padStates[i]) {
 				holds[i] += 1;
 			} else {
 				holds[i] = 0;
 			}
-
-			//Prevent overflow.
 			if (holds[i]>49) {
 				holds[i] -= 10;
 			}
 		}
-		
+
+		//Increment trigger holds, cap to prevent overflow.
+		if (EventThread::padAxes[SDL_CONTROLLER_AXIS_TRIGGERLEFT] > 0) {  // >50%
+			holdsTrig[0] += 1;
+		}
+		if (EventThread::padAxes[SDL_CONTROLLER_AXIS_TRIGGERRIGHT] > 0) { // >50%
+			holdsTrig[1] += 1;
+		}
+		if (holdsTrig[0]>49) { holds[0] -= 10; }
+		if (holdsTrig[1]>49) { holds[1] -= 10; }
 	}
 
 	//State check functions
 	bool isPress(int button) {
-		return validate(button) && key_holds(button)>0;
+		//Cheaty, cheaty.
+		if (button == static_cast<int>(SDL_CONTROLLER_BUTTON_MAX)+1) { return holdsTrig[0]>0; } //L2
+		if (button == static_cast<int>(SDL_CONTROLLER_BUTTON_MAX)+2) { return holdsTrig[1]>0; } //R2
+
+		//Normal
+		return validate(button) && holds[button]>0;
 	}
 	bool isTrigger(int button) {
-		return validate(button) && key_holds(button)==1;
+		//Cheaty, cheaty.
+		if (button == static_cast<int>(SDL_CONTROLLER_BUTTON_MAX)+1) { return holdsTrig[0]==1; } //L2
+		if (button == static_cast<int>(SDL_CONTROLLER_BUTTON_MAX)+2) { return holdsTrig[1]==1; } //R2
+
+		//Normal
+		return validate(button) && holds[button]==1;
 	}
 	bool isRepeat(int button) {
+		//Cheaty, cheaty.
+		if (button == static_cast<int>(SDL_CONTROLLER_BUTTON_MAX)+1) { //L2
+			int result = holdsTrig[0];
+			return (result==1) || (result>30 && (result%5)==0);
+		}
+		if (button == static_cast<int>(SDL_CONTROLLER_BUTTON_MAX)+2) { //R2
+			int result = holdsTrig[1];
+			return (result==1) || (result>30 && (result%5)==0);
+		}
+
+		//Normal.
 		if (validate(button)) {
-			int result = key_holds(button);
+			int result = holds[button];
 			return (result==1) || (result>30 && (result%5)==0);
 		}
 		return false;
