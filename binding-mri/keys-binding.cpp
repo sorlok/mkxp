@@ -1,5 +1,23 @@
 /*
- * TODO
+ * keys-bindings.cpp
+ *
+ * This file was made as an extension to mkxp, and should be considered
+ *   a derivative work.
+ *
+ * Copyright (C) 2015 Seth N. Hetu <seth.hetu@gmail.com>
+ *
+ * mkxp is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * mkxp is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with mkxp.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "keys.h"
@@ -8,15 +26,6 @@
 #include "binding-types.h"
 #include "exception.h"
 
-
-/*RB_METHOD(keysModuleInit)
-{
-	RB_UNUSED_PARAM;
-
-	shState->keys().moduleInit();
-
-	return Qnil;
-}*/
 
 RB_METHOD(keysGetKeyname)
 {
@@ -198,43 +207,44 @@ void keysBindingInit()
 	_rb_define_module_function(module, "repeat?", keysRepeat);
 	_rb_define_module_function(module, "release?", keysRelease);
 
-	//Key codes. (TODO: Test these in parallel on Windows)
+	//SDL Scancodes. 
+	// TODO: Test these in parallel on Windows, OSX
+	// TODO: Have someone with a different keyboard layout test these.
 	rb_const_set(module, rb_intern("CANCEL"), rb_int_new(static_cast<int>(SDL_SCANCODE_CANCEL)));
 	rb_const_set(module, rb_intern("BACKSPACE"), rb_int_new(static_cast<int>(SDL_SCANCODE_BACKSPACE)));
 	rb_const_set(module, rb_intern("TAB"), rb_int_new(static_cast<int>(SDL_SCANCODE_TAB)));
 	rb_const_set(module, rb_intern("CLEAR"), rb_int_new(static_cast<int>(SDL_SCANCODE_CLEAR)));
 	rb_const_set(module, rb_intern("RETURN"), rb_int_new(static_cast<int>(SDL_SCANCODE_RETURN)));
-	//rb_const_set(module, rb_intern("LSHIFT"), rb_int_new(static_cast<int>(SDL_SCANCODE_LSHIFT)));  //TODO: Need a separate "SHIFT" that represents "left and right shift together"
-	//rb_const_set(module, rb_intern("RSHIFT"), rb_int_new(static_cast<int>(SDL_SCANCODE_RSHIFT)));  //     
-	//rb_const_set(module, rb_intern("LCONTROL"), rb_int_new(static_cast<int>(SDL_SCANCODE_LCTRL)));  //TODO: Same here.
-	//rb_const_set(module, rb_intern("RCONTROL"), rb_int_new(static_cast<int>(SDL_SCANCODE_RCTRL)));  //
-	//rb_const_set(module, rb_intern("LWIN"), rb_int_new(static_cast<int>(SDL_SCANCODE_LGUI)));
-	//rb_const_set(module, rb_intern("RWIN"), rb_int_new(static_cast<int>(SDL_SCANCODE_RGUI)));
-	rb_const_set(module, rb_intern("MENU"), rb_int_new(static_cast<int>(SDL_SCANCODE_MENU))); //TODO: Not the same as ALT?
+	rb_const_set(module, rb_intern("MENU"), rb_int_new(static_cast<int>(SDL_SCANCODE_MENU)));
 	rb_const_set(module, rb_intern("PAUSE"), rb_int_new(static_cast<int>(SDL_SCANCODE_PAUSE)));
 	rb_const_set(module, rb_intern("ESCAPE"), rb_int_new(static_cast<int>(SDL_SCANCODE_ESCAPE)));
 	rb_const_set(module, rb_intern("SPACE"), rb_int_new(static_cast<int>(SDL_SCANCODE_SPACE)));
 	rb_const_set(module, rb_intern("PRIOR"), rb_int_new(static_cast<int>(SDL_SCANCODE_PAGEUP)));
 	rb_const_set(module, rb_intern("NEXT"), rb_int_new(static_cast<int>(SDL_SCANCODE_PAGEDOWN)));
 	rb_const_set(module, rb_intern("ENDS"), rb_int_new(static_cast<int>(SDL_SCANCODE_END)));
+	rb_const_set(module, rb_intern("GRAVE"), rb_int_new(static_cast<int>(SDL_SCANCODE_GRAVE)));
 	rb_const_set(module, rb_intern("HOME"), rb_int_new(static_cast<int>(SDL_SCANCODE_HOME)));
 	rb_const_set(module, rb_intern("LEFT"), rb_int_new(static_cast<int>(SDL_SCANCODE_LEFT)));
 	rb_const_set(module, rb_intern("UP"), rb_int_new(static_cast<int>(SDL_SCANCODE_UP)));
 	rb_const_set(module, rb_intern("RIGHT"), rb_int_new(static_cast<int>(SDL_SCANCODE_RIGHT)));
 	rb_const_set(module, rb_intern("DOWN"), rb_int_new(static_cast<int>(SDL_SCANCODE_DOWN)));
 	rb_const_set(module, rb_intern("SELECT"), rb_int_new(static_cast<int>(SDL_SCANCODE_SELECT)));
-	//rb_const_set(module, rb_intern("PRINT"), rb_int_new(static_cast<int>(SDL_SCANCODE_PRINT))); //Unknown
+	rb_const_set(module, rb_intern("BACKSLASH"), rb_int_new(static_cast<int>(SDL_SCANCODE_BACKSLASH)));
+	rb_const_set(module, rb_intern("NONBACKSLASH"), rb_int_new(static_cast<int>(SDL_SCANCODE_NONUSBACKSLASH)));
+	rb_const_set(module, rb_intern("LBRACKET"), rb_int_new(static_cast<int>(SDL_SCANCODE_LEFTBRACKET)));
+	rb_const_set(module, rb_intern("RBRACKET"), rb_int_new(static_cast<int>(SDL_SCANCODE_RIGHTBRACKET)));
+	rb_const_set(module, rb_intern("MINUS"), rb_int_new(static_cast<int>(SDL_SCANCODE_MINUS)));
+	rb_const_set(module, rb_intern("EQUALS"), rb_int_new(static_cast<int>(SDL_SCANCODE_EQUALS)));
+	rb_const_set(module, rb_intern("SEMICOLON"), rb_int_new(static_cast<int>(SDL_SCANCODE_SEMICOLON)));
+	rb_const_set(module, rb_intern("APOSTROPHE"), rb_int_new(static_cast<int>(SDL_SCANCODE_APOSTROPHE)));
+	rb_const_set(module, rb_intern("COMMA"), rb_int_new(static_cast<int>(SDL_SCANCODE_COMMA)));
+	rb_const_set(module, rb_intern("PERIOD"), rb_int_new(static_cast<int>(SDL_SCANCODE_PERIOD)));
+	rb_const_set(module, rb_intern("SLASH"), rb_int_new(static_cast<int>(SDL_SCANCODE_SLASH)));
+	rb_const_set(module, rb_intern("WINAPP"), rb_int_new(static_cast<int>(SDL_SCANCODE_APPLICATION)));
 	rb_const_set(module, rb_intern("EXECUTE"), rb_int_new(static_cast<int>(SDL_SCANCODE_EXECUTE)));
 	rb_const_set(module, rb_intern("SNAPSHOT"), rb_int_new(static_cast<int>(SDL_SCANCODE_PRINTSCREEN)));
 	rb_const_set(module, rb_intern("DELETE"), rb_int_new(static_cast<int>(SDL_SCANCODE_DELETE)));
 	rb_const_set(module, rb_intern("HELP"), rb_int_new(static_cast<int>(SDL_SCANCODE_HELP)));
-	//rb_const_set(module, rb_intern("LSHIFT"), rb_int_new(static_cast<int>(SDL_SCANCODE_LSHIFT)));
-	//rb_const_set(module, rb_intern("RSHIFT"), rb_int_new(static_cast<int>(SDL_SCANCODE_RSHIFT)));
-	//rb_const_set(module, rb_intern("LCONTROL"), rb_int_new(static_cast<int>(SDL_SCANCODE_LCONTROL)));
-	//rb_const_set(module, rb_intern("RCONTROL"), rb_int_new(static_cast<int>(SDL_SCANCODE_RCONTROL)));
-	//rb_const_set(module, rb_intern("LMENU"), rb_int_new(static_cast<int>(SDL_SCANCODE_LALT)));
-	//rb_const_set(module, rb_intern("RMENU"), rb_int_new(static_cast<int>(SDL_SCANCODE_RALT)));
-	//rb_const_set(module, rb_intern("PACKET"), rb_int_new(static_cast<int>(SDL_SCANCODE_PACKET))); //Doesn't exist?
 
 	//Number keys
 	rb_const_set(module, rb_intern("N0"), rb_int_new(static_cast<int>(SDL_SCANCODE_0)));
@@ -295,7 +305,6 @@ void keysBindingInit()
 	rb_const_set(module, rb_intern("NUMPAD9"), rb_int_new(static_cast<int>(SDL_SCANCODE_KP_9)));
 	rb_const_set(module, rb_intern("MULTIPLY"), rb_int_new(static_cast<int>(SDL_SCANCODE_KP_MULTIPLY)));
 	rb_const_set(module, rb_intern("ADD"), rb_int_new(static_cast<int>(SDL_SCANCODE_KP_PLUS)));
-	//rb_const_set(module, rb_intern("SEPARATOR"), rb_int_new(static_cast<int>(SDL_SCANCODE_KP_SEPARATOR)));
 	rb_const_set(module, rb_intern("SUBTRACT"), rb_int_new(static_cast<int>(SDL_SCANCODE_KP_MINUS)));
 	rb_const_set(module, rb_intern("DECIMAL"), rb_int_new(static_cast<int>(SDL_SCANCODE_KP_PERIOD)));
 	rb_const_set(module, rb_intern("DIVIDE"), rb_int_new(static_cast<int>(SDL_SCANCODE_KP_DIVIDE)));
@@ -326,92 +335,7 @@ void keysBindingInit()
 	rb_const_set(module, rb_intern("F23"), rb_int_new(static_cast<int>(SDL_SCANCODE_F23)));
 	rb_const_set(module, rb_intern("F24"), rb_int_new(static_cast<int>(SDL_SCANCODE_F24)));
 
-	//TODO: Toggle keys
-	//CAPITAL (caps lock)
-	//KANA
-	//HANGUL
-	//JUNJA
-	//FINAL
-	//HANJA
-	//KANJI
-	//MODECHANGE
-	//INSERT
-	//NUMLOCK
-	//SCROLL
-
-	//TODO: OEM keys
-	//OEM_1
-	//OEM_2
-	//OEM_3
-	//OEM_4
-	//OEM_5
-	//OEM_6
-	//OEM_7
-	//OEM_8
-	//OEM_9
-	//OEM_10
-	//OEM_11
-	//OEM_12
-	//OEM_13
-	//OEM_14
-	//OEM_15
-	//OEM_16
-	//OEM_17
-	//OEM_18
-	//OEM_19
-	//OEM_20
-	//OEM_21
-	//OEM_22
-	//OEM_23
-	//OEM_24
-	//OEM_25
-	//OEM_26
-	//OEM_27
-	//OEM_28
-	//OEM_29
-	//OEM_102
-	//OEM_PLUS
-	//OEM_COMMA
-	//OEM_MINUS
-	//OEM_PERIOD
-	//OEM_CLEAR
-
-	//TODO: Keys that don't make quite so much sense.
-	//APPS
-	//SLEEP
-	//BROWSER_BACK
-	//BROWSER_FORWARD
-	//BROWSER_REFRESH
-	//BROWSER_STOP
-	//BROWSER_SEARCH
-	//BROWSER_FAVORITES
-	//BROWSER_HOME
-	//VOLUME_MUTE
-	//VOLUME_DOWN
-	//VOLUME_UP
-	//MEDIA_NEXT_TRACK
-	//MEDIA_PREV_TRACK
-	//MEDIA_STOP
-	//MEDIA_PLAY_PAUSE
-	//LAUNCH_MAIL
-	//LAUNCH_MEDIA_SELECT
-	//LAUNCH_APP1
-	//LAUNCH_APP2
-	//PROCESSKEY
-	//ATTN
-	//CRSEL
-	//EXSEL
-	//EREOF
-	//PLAY
-	//ZOOM
-	//PA1
-	//rb_const_set(module, "CONVERT", static_cast<int>(SDL_SCANCODE_CONVERT));
-	//rb_const_set(module, "NONCONVERT", static_cast<int>(SDL_SCANCODE_NONCONVERT));
-	//rb_const_set(module, "ACCEPT", static_cast<int>(SDL_SCANCODE_ACCEPT));
-
 	//Repurpose SDL_SCANCODE_UNKNOWN as "any"
 	rb_const_set(module, rb_intern("ANYKEY"), rb_int_new(static_cast<int>(SDL_SCANCODE_UNKNOWN)));
-
-	//Max key code
-	//rb_const_set(module, "NUM_SCANCODES", static_cast<int>(SDL_NUM_SCANCODES));
 }
+
