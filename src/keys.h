@@ -5,7 +5,8 @@
 #ifndef KEYS_H
 #define KEYS_H
 
-#include <SDL_scancode.h>
+#include <iostream>
+#include <SDL_keyboard.h>
 #include <SDL_gamecontroller.h>
 #include "util.h"
 
@@ -103,6 +104,12 @@ public:
 			states[i] = KeyState();
 		}
 	}*/
+
+	//Key lookup
+	const char* getKeyname(int key) {
+		if (!validate(key)) { return ""; }
+		return SDL_GetKeyName(SDL_GetKeyFromScancode(static_cast<SDL_Scancode>(key)));
+	}
 
 	void update() {
 		//Clear

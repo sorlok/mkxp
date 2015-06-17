@@ -18,6 +18,26 @@
 	return Qnil;
 }*/
 
+RB_METHOD(keysGetKeyname)
+{
+	RB_UNUSED_PARAM;
+
+	int key = 0;
+
+	rb_get_args(argc, argv, "i|", &key RB_ARG_END);
+
+	const char* res = "";
+	GUARD_EXC( res = shState->keys().getKeyname(key); )
+
+	//Over-ride: Unknown ("") and LSHIFT/RSHIFT, etc.
+	if (!*res) { res = "Unknown Key"; }
+	if (strcmp(res, "Left Ctrl")==0 || strcmp(res, "Right Ctrl")==0) { res = "Ctrl"; }
+	if (strcmp(res, "Left Alt")==0 || strcmp(res, "Right Alt")==0) { res = "Alt"; }
+	if (strcmp(res, "Left Shift")==0 || strcmp(res, "Right Shift")==0) { res = "Shift"; }
+
+	return rb_str_new_cstr(res);
+}
+
 RB_METHOD(keysUpdate)
 {
 	RB_UNUSED_PARAM;
@@ -171,6 +191,7 @@ void keysBindingInit()
 	VALUE module = rb_define_module("Keys");
 
 	//_rb_define_module_function(module, "moduleInit", keysModuleInit);
+	_rb_define_module_function(module, "determine_keyname", keysGetKeyname);
 	_rb_define_module_function(module, "update", keysUpdate);
 	_rb_define_module_function(module, "press?", keysPress);
 	_rb_define_module_function(module, "trigger?", keysTrigger);
