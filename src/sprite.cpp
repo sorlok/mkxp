@@ -40,6 +40,8 @@
 
 #include <sigc++/connection.h>
 
+#define M_PI 3.14159265359
+
 struct SpritePrivate
 {
 	Bitmap *bitmap;
