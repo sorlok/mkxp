@@ -169,12 +169,17 @@ public:
 		}
 	}
 
-	void requestViewportRender(Vec4 &c, Vec4 &f, Vec4 &t)
+	void requestViewportRender(const Vec4 &c, const Vec4 &f, const Vec4 &t)
 	{
 		const IntRect &viewpRect = glState.scissorBox.get();
 		const IntRect &screenRect = geometry.rect;
 
-		if (t.w != 0.0)
+		const bool toneRGBEffect  = t.xyzNotNull();
+		const bool toneGrayEffect = t.w != 0;
+		const bool colorEffect    = c.w > 0;
+		const bool flashEffect    = f.w > 0;
+
+		if (toneGrayEffect)
 		{
 			pp.swapRender();
 
@@ -206,19 +211,14 @@ public:
 			glState.blend.pop();
 		}
 
-		bool toneEffect = t.xyzHasEffect();
-		bool colorEffect = c.xyzHasEffect();
-		bool flashEffect = f.xyzHasEffect();
-
-		if (!toneEffect && !colorEffect && !flashEffect)
+		if (!toneRGBEffect && !colorEffect && !flashEffect)
 			return;
 
 		FlatColorShader &shader = shState->shaders().flatColor;
 		shader.bind();
 		shader.applyViewportProj();
 
-		/* Apply tone */
-		if (toneEffect)
+		if (toneRGBEffect)
 		{
 			/* First split up additive / substractive components */
 			Vec4 add, sub;
@@ -240,7 +240,7 @@ public:
 			/* Then apply them using hardware blending */
 			gl.BlendFuncSeparate(GL_ONE, GL_ONE, GL_ZERO, GL_ONE);
 
-			if (add.xyzHasEffect())
+			if (add.xyzNotNull())
 			{
 				gl.BlendEquation(GL_FUNC_ADD);
 				shader.setColor(add);
@@ -248,7 +248,7 @@ public:
 				screenQuad.draw();
 			}
 
-			if (sub.xyzHasEffect())
+			if (sub.xyzNotNull())
 			{
 				gl.BlendEquation(GL_FUNC_REVERSE_SUBTRACT);
 				shader.setColor(sub);
