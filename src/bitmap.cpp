@@ -44,8 +44,9 @@
 #include "font.h"
 #include "eventthread.h"
 
-
+#ifndef M_PI
 #define M_PI 3.14159265359
+#endif
 
 #define GUARD_MEGA \
 	{ \
