@@ -466,31 +466,6 @@ static void runRMXPScripts(BacktraceData &btData)
 	while (true)
 	{
 std::cout <<"MKXP: TOP OF LOOP\n";
-//	tableBindingInit();
-//	etcBindingInit();
-//	fontBindingInit();
-//	bitmapBindingInit();
-//	spriteBindingInit();
-//	viewportBindingInit();
-//	planeBindingInit();
-
-	if (rgssVer == 1)
-	{
-//		windowBindingInit();
-//		tilemapBindingInit();
-	}
-	else
-	{
-//		windowVXBindingInit();
-//		tilemapVXBindingInit();
-	}
-
-//	inputBindingInit();
-//	audioBindingInit();
-//	graphicsBindingInit();
-
-//	fileIntBindingInit();
-//std::cout <<"MKXP: Forced binding re-init.\n";
 		for (long i = 0; i < scriptCount; ++i)
 		{
 			VALUE script = rb_ary_entry(scriptArray, i);

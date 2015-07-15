@@ -28,11 +28,17 @@
 #include "eventthread.h"
 #include "sdl-util.h"
 
+#include <sys/time.h>
 #include <iostream>
 #include <string>
+#include <map>
 
 #include <SDL_thread.h>
 #include <SDL_timer.h>
+
+//Stores the last time we actually played a sound.
+std::map<std::string, timeval> soundEffectTimeout;
+
 
 struct AudioPrivate
 {
@@ -308,7 +314,25 @@ void Audio::sePlay(const char *filename,
                    int volume,
                    int pitch)
 {
-	p->se.play(filename, volume, pitch);
+	//Get current time in MS.
+	timeval now;
+	gettimeofday(&now, NULL);
+
+	//First time playing?
+	if (soundEffectTimeout.find(filename) == soundEffectTimeout.end()) {
+		p->se.play(filename, volume, pitch);
+		soundEffectTimeout[filename] = now;
+	} else {
+		//Has enough time passed to play it again?
+		timeval prev = soundEffectTimeout[filename];
+		long diffMS = ((now.tv_sec-prev.tv_sec) * 1000 + (now.tv_usec-prev.tv_usec)/1000.0) + 0.5;
+		if (diffMS > 50) {
+			p->se.play(filename, volume, pitch);
+			soundEffectTimeout[filename] = now;
+		} else {
+			std::cout <<"Skipped song (too soon) " <<filename <<"\n";
+		}
+	}
 }
 
 void Audio::seStop()
