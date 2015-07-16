@@ -275,6 +275,9 @@ if (controller) {
 	if (conf.fullscreen)
 		winFlags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 
+	if (true)
+		winFlags |= SDL_WINDOW_ALLOW_HIGHDPI;
+
 	win = SDL_CreateWindow(conf.game.title.c_str(),
 	                       SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 	                       conf.defScreenW, conf.defScreenH, winFlags);

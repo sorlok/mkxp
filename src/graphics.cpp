@@ -821,8 +821,8 @@ void Graphics::frameReset()
 
 void Graphics::moveResizeRaise(int x, int y, int w, int h)
 {
-	SDL_SetWindowPosition(p->threadData->window, x, y);
 	SDL_SetWindowSize(p->threadData->window, w, h);
+	SDL_SetWindowPosition(p->threadData->window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 	SDL_RaiseWindow(p->threadData->window);
 }
 
