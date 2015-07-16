@@ -41,7 +41,7 @@ public:
 	                int vague = 40);
 	void frameReset();
 
-        void moveResizeRaise(int x, int y, int w, int h);
+        void centerResizeRaise(int w, int h);
 
 	DECL_ATTR( FrameRate,  int )
 	DECL_ATTR( FrameCount, int )

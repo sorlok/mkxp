@@ -819,7 +819,7 @@ void Graphics::frameReset()
 	p->fpsLimiter.resetFrameAdjust();
 }
 
-void Graphics::moveResizeRaise(int x, int y, int w, int h)
+void Graphics::centerResizeRaise(int w, int h)
 {
 	SDL_SetWindowSize(p->threadData->window, w, h);
 	SDL_SetWindowPosition(p->threadData->window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
