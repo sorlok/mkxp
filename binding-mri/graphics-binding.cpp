@@ -188,6 +188,18 @@ RB_METHOD(graphicsResizeScreen)
 	return Qnil;
 }
 
+RB_METHOD(graphicsSetFullscreen2)
+{
+	RB_UNUSED_PARAM;
+
+	bool isFS;
+	rb_get_args(argc, argv, "b", &isFS RB_ARG_END);
+
+	shState->graphics().setFullscreen(isFS);
+
+	return Qnil;
+}
+
 RB_METHOD(graphicsReset)
 {
 	RB_UNUSED_PARAM;
@@ -240,6 +252,8 @@ void graphicsBindingInit()
 
 	INIT_GRA_PROP_BIND( Brightness, "brightness" );
 	}
+
+	_rb_define_module_function(module, "set_fullscreen", graphicsSetFullscreen2);
 
 	INIT_GRA_PROP_BIND( Fullscreen, "fullscreen"  );
 	INIT_GRA_PROP_BIND( ShowCursor, "show_cursor" );
