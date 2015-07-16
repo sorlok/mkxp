@@ -95,9 +95,31 @@ pkg_check_modules(SDL2_TTF      REQUIRED SDL2_ttf)
 pkg_check_modules(SDL2_IMAGE    REQUIRED SDL2_image)
 pkg_check_modules(SDL_SOUND     REQUIRED SDL_sound)
 
-find_package(Boost 1.49 COMPONENTS program_options REQUIRED)
-find_package(OpenAL REQUIRED)
+#OS-X confuses OpenAL (Framework) and OpenALSOFT (library)
+if(APPLE)
+  pkg_check_modules(OPENALSOFT    REQUIRED openal)
+  set(OPENAL_INCLUDE_DIR  ${OPENALSOFT_INCLUDE_DIRS})
+  set(OPENAL_LIBRARY  ${OPENALSOFT_LIBRARIES})
+else()
+  find_package(OpenAL REQUIRED)
+endif()
+
+#Not worth the trouble.
+if(APPLE)
+  set(Boost_LIBRARIES "")
+else()
+  find_package(Boost 1.49 COMPONENTS program_options REQUIRED)
+endif()
+
 find_package(ZLIB REQUIRED)
+
+# We hijack Ruby differently in each case. :)
+if(APPLE)
+  set(RUBY_STATIC_LIB  "/opt/local/lib/libruby-static.a")
+else()
+  set(RUBY_STATIC_LIB  "/usr/local/lib/libruby-static.a")
+endif()
+
 
 ## Setup main source ##
 
@@ -207,6 +229,25 @@ set(MAIN_SOURCE
 	src/midisource.cpp
 	src/fluid-fun.cpp
 )
+
+#On OS-X, we just compile boost::program_options manually.
+if(APPLE)
+  set(MAIN_SOURCE 
+    ${MAIN_SOURCE}
+    boost/cmdline.cpp
+    boost/config_file.cpp
+    boost/convert.cpp
+    boost/options_description.cpp
+    boost/parsers.cpp
+    boost/positional_options.cpp
+    boost/split.cpp
+    boost/utf8_codecvt_facet.cpp
+    boost/value_semantic.cpp
+    boost/variables_map.cpp
+    boost/winmain.cpp
+  )
+endif()
+
 
 source_group("MKXP Source" FILES ${MAIN_SOURCE} ${MAIN_HEADERS})
 
@@ -413,7 +454,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	${SIGCXX_INCLUDE_DIRS}
 	${PIXMAN_INCLUDE_DIRS}
 	${PHYSFS_INCLUDE_DIRS}
-        "/usr/local/include/SDL2"
 	${SDL2_INCLUDE_DIRS} # Blindly assume other SDL bits are in same directory
 	${Boost_INCLUDE_DIR}
 	${MRI_INCLUDE_DIRS}
@@ -421,7 +461,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	${FLUID_INCLUDE_DIRS}
 	${OPENAL_INCLUDE_DIR}
 )
-
 target_link_libraries(${PROJECT_NAME}
 	${SIGCXX_LIBRARIES}
 	${SDL2_LIBRARIES}
@@ -438,7 +477,8 @@ target_link_libraries(${PROJECT_NAME}
 	${ZLIB_LIBRARY}
 
 	${PLATFORM_LIBRARIES}
-	/usr/local/lib/libruby-static.a
+    ${RUBY_STATIC_LIB}
 )
+
 
 PostBuildMacBundle(${PROJECT_NAME} "" "${PLATFORM_COPY_LIBS}")
