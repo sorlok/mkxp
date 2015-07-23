@@ -241,6 +241,22 @@ RB_METHOD(ppWriteString)
 	return Qnil;
 }
 
+
+RB_METHOD(steamAchieveSync)
+{
+	RB_UNUSED_PARAM;
+
+        //This contains a 1/0 for every achievement, in order. (1==got it)
+	const char* achieveStr = "";
+
+	rb_get_args(argc, argv, "z|", &achieveStr RB_ARG_END);
+
+	GUARD_EXC( SteamSyncAchievements(achieveStr); )
+
+	return Qnil;
+}
+
+
 void
 fileIntBindingInit()
 {
@@ -249,6 +265,12 @@ fileIntBindingInit()
 	VALUE module = rb_define_module("PrivateProfile");
 	_rb_define_module_function(module, "get_string", ppGetString);
 	_rb_define_module_function(module, "write_string", ppWriteString);
+	}
+
+	//Special module: SteamAchievements
+	{
+	VALUE module = rb_define_module("SteamAchievements");
+	_rb_define_module_function(module, "sync_all", steamAchieveSync);
 	}
 
 

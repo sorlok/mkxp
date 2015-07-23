@@ -416,6 +416,17 @@ endif()
 
 source_group("Binding Source" FILES ${BINDING_SOURCE} ${BINDING_HEADERS})
 
+
+# Link Steamlib
+IF(LINUX)
+	set(STEAM_LIBRARY ":../steamworks_133b/redistributable_bin/linux64/libsteam_api.so")
+elseif(APPLE)
+	set(STEAM_LIBRARY ":../steamworks_133b/redistributable_bin/osx32/libsteam_api.dylib")
+else() #Windows?
+	set(STEAM_LIBRARY ":../steamworks_133b/redistributable_bin/win64/steam_api64.dll")
+endif()
+
+
 ## Setup main executable ##
 
 if(APPLE)
@@ -460,6 +471,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	${VORBISFILE_INCLUDE_DIRS}
 	${FLUID_INCLUDE_DIRS}
 	${OPENAL_INCLUDE_DIR}
+	"steamworks_133b/"
 )
 target_link_libraries(${PROJECT_NAME}
 	${SIGCXX_LIBRARIES}
@@ -475,6 +487,7 @@ target_link_libraries(${PROJECT_NAME}
 	${FLUID_LIBRARIES}
 	${OPENAL_LIBRARY}
 	${ZLIB_LIBRARY}
+	${STEAM_LIBRARY}
 
 	${PLATFORM_LIBRARIES}
     ${RUBY_STATIC_LIB}
