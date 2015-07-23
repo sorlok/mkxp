@@ -9,6 +9,7 @@ option(FORCE32 "Force 32bit compile on 64bit OS" OFF)
 set(BINDING "MRI" CACHE STRING "The Binding Type (MRI, MRUBY, NULL)")
 set(EXTERNAL_LIB_PATH "" CACHE PATH "External precompiled lib prefix")
 
+
 ## Misc setup ##
 
 include(cmake/PrepUtils.cmake)
@@ -36,6 +37,21 @@ IF(FORCE32)
 		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m32")
 	endif()
 ENDIF()
+
+#We need a Windows flag
+IF(LINUX)
+  SET(WINDOWS OFF)
+elseif(APPLE)
+  SET(WINDOWS OFF)
+else() #Windows?
+  SET(WINDOWS ON)
+endif()
+
+#We want as few dlls as possible on Windows
+if (WINDOWS)
+  set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
+endif()
+
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.6)
 
@@ -88,12 +104,23 @@ endif()
 
 pkg_check_modules(SIGCXX        REQUIRED sigc++-2.0)
 pkg_check_modules(PIXMAN        REQUIRED pixman-1)
-pkg_check_modules(PHYSFS        REQUIRED physfs>=2.1)
 pkg_check_modules(VORBISFILE    REQUIRED vorbisfile)
-pkg_check_modules(SDL2          REQUIRED sdl2)
-pkg_check_modules(SDL2_TTF      REQUIRED SDL2_ttf)
-pkg_check_modules(SDL2_IMAGE    REQUIRED SDL2_image)
-pkg_check_modules(SDL_SOUND     REQUIRED SDL_sound)
+
+#These are messed up currently on Windows
+if (WINDOWS) 
+  pkg_check_modules(PHYSFS         physfs>=2.1)
+  pkg_check_modules(SDL2           sdl2)
+  pkg_check_modules(SDL2_TTF       SDL2_ttf)
+  pkg_check_modules(SDL2_IMAGE     SDL2_image)
+  pkg_check_modules(SDL_SOUND      SDL_sound)
+else()
+  pkg_check_modules(PHYSFS     REQUIRED    physfs>=2.1)
+  pkg_check_modules(SDL2       REQUIRED    sdl2)
+  pkg_check_modules(SDL2_TTF   REQUIRED    SDL2_ttf)
+  pkg_check_modules(SDL2_IMAGE REQUIRED    SDL2_image)
+  pkg_check_modules(SDL_SOUND  REQUIRED    SDL_sound)
+endif()
+
 
 #OS-X confuses OpenAL (Framework) and OpenALSOFT (library)
 if(APPLE)
@@ -118,6 +145,23 @@ if(APPLE)
   set(RUBY_STATIC_LIB  "/opt/local/lib/libruby-static.a")
 else()
   set(RUBY_STATIC_LIB  "/usr/local/lib/libruby-static.a")
+endif()
+
+#Windows adds a whole bunch of garbage
+if (WINDOWS)
+  set(RUBY_STATIC_LIB
+      "/home/sethhetu/.rake-compiler/builds/x86_64-w64-mingw32.static/ruby-2.2.2/libx64-msvcrt-ruby220-static.a"
+      "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libphysfs.a"
+      "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libSDL2_image.a"
+      "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libSDL2_ttf.a"
+      "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libSDL_sound.a"
+      "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libSDL2.a"
+      "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libFLAC.a"
+      "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libspeex.a"
+      "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libgmp.a"
+      "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libjpeg.a"
+      "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libiphlpapi.a"
+)
 endif()
 
 
@@ -333,7 +377,12 @@ source_group("Embedded Source" FILES ${EMBEDDED_INPUT} ${EMBEDDED_SOURCE})
 
 if (BINDING STREQUAL "MRI")
 	set(MRIVERSION "2.2" CACHE STRING "Version of MRI to link with")
-	pkg_check_modules(MRI REQUIRED ruby-${MRIVERSION})
+        if (WINDOWS)
+	  pkg_check_modules(MRI  ruby-${MRIVERSION})
+        else()
+	  pkg_check_modules(MRI REQUIRED  ruby-${MRIVERSION})
+        endif()
+
 	list(APPEND DEFINES
 		BINDING_MRI
 	)
@@ -461,6 +510,14 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	${FLUID_INCLUDE_DIRS}
 	${OPENAL_INCLUDE_DIR}
 )
+if (WINDOWS)
+target_include_directories(${PROJECT_NAME} PRIVATE
+        "/home/sethhetu/.rake-compiler/ruby/x86_64-w64-mingw32.static/ruby-2.2.2/include/ruby-2.2.0/"
+        "/home/sethhetu/.rake-compiler/ruby/x86_64-w64-mingw32.static/ruby-2.2.2/include/ruby-2.2.0/x64-mingw32.static"
+
+)
+endif()
+
 target_link_libraries(${PROJECT_NAME}
 	${SIGCXX_LIBRARIES}
 	${SDL2_LIBRARIES}
@@ -477,7 +534,7 @@ target_link_libraries(${PROJECT_NAME}
 	${ZLIB_LIBRARY}
 
 	${PLATFORM_LIBRARIES}
-    ${RUBY_STATIC_LIB}
+        ${RUBY_STATIC_LIB}
 )
 
 
