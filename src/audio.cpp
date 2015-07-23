@@ -177,7 +177,7 @@ struct AudioPrivate
 					else
 					{
 						/* BGM is stopped. -> MeNotPlaying */
-						bgm.setVolume(AudioStream::External, 1.0);
+						bgm.setVolume(AudioStream::External, 1.0f);
 
 						if (!bgm.noResumeStop)
 							bgm.stream.play();
@@ -200,7 +200,7 @@ struct AudioPrivate
 				if (bgm.stream.queryState() == ALStream::Stopped)
 				{
 					/* BGM stopped midway fade in. -> MeNotPlaying */
-					bgm.setVolume(AudioStream::External, 1.0);
+					bgm.setVolume(AudioStream::External, 1.0f);
 					meWatch.state = MeNotPlaying;
 					bgm.unlockStream();
 
@@ -226,7 +226,7 @@ struct AudioPrivate
 				if (vol >= 1)
 				{
 					/* BGM fully faded in. -> MeNotPlaying */
-					vol = 1.0;
+					vol = 1.0f;
 					meWatch.state = MeNotPlaying;
 				}
 

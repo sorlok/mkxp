@@ -41,6 +41,9 @@
 #include <vector>
 #include <stack>
 
+//Steam stuff
+#include "steam_api.h"
+
 #ifdef __APPLE__
 #include <iconv.h>
 #endif
@@ -158,6 +161,40 @@ void WritePPString(const char* section, const char* key, const char* value, cons
 
 	//Now, use our generic reader/writer function, converting strings as you go.
 	pp_read_write(true, (section?section:""), (key?key:""), (value?value:""), filePath);
+}
+
+void SteamSyncAchievements(const char* achieveStr)
+{
+	//TODO
+	std::string ourAchieves(achieveStr);
+
+
+	//Can't do achievements if steam is not loaded.
+	ISteamUser* user = SteamUser();
+	ISteamUserStats* userStats = SteamUserStats();
+	ISteamFriends* userFriends = SteamFriends();
+	if (!(user && userStats)) {
+		std::cout <<"Can't get Steam achievements; user or user_stats is null.\n";
+		return;
+	}
+	std::cout <<"Requesting stats for Steam player: " <<std::string(userFriends?userFriends->GetPersonaName():"<unknown>") <<"\n";
+	if (!userStats->RequestCurrentStats()) {
+		std::cout <<"Can't get Steam achievements; unknown error.\n";
+		return;
+	}
+
+	//Print the current achievements; compare to what we have:
+	unsigned int nm = userStats->GetNumAchievements();
+	for (unsigned int i=0; i<nm; i++) {
+		std::string name = userStats->GetAchievementName(i);
+		bool status = false;
+		if (!userStats->GetAchievement(name.c_str(), &status)) {
+			std::cout <<"Can't get Steam achievement \"" <<name <<"\" (" <<i <<"); unknown error.\n";
+			continue;
+		}
+		std::cout <<"ACHIEVEMENT: \"" <<name <<"\" (" <<i <<") => " <<(status?"YES":"no") <<"\n";
+		std::cout <<"    we have:" <<(i<ourAchieves.size()?ourAchieves[i]:9) <<"\n";
+	}
 }
 
 
