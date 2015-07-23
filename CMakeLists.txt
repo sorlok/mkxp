@@ -468,11 +468,14 @@ source_group("Binding Source" FILES ${BINDING_SOURCE} ${BINDING_HEADERS})
 
 # Link Steamlib
 IF(LINUX)
+        set(STEAM_LIBRARY_DIR "")
 	set(STEAM_LIBRARY ":../steamworks_133b/redistributable_bin/linux64/libsteam_api.so")
 elseif(APPLE)
+        set(STEAM_LIBRARY_DIR "")
 	set(STEAM_LIBRARY ":../steamworks_133b/redistributable_bin/osx32/libsteam_api.dylib")
-else() #Windows?
-	set(STEAM_LIBRARY ":../steamworks_133b/redistributable_bin/win64/steam_api64.dll")
+else() #Windows
+        set(STEAM_LIBRARY_DIR "steamworks_133b/redistributable_bin/win64")
+	set(STEAM_LIBRARY "steam_api64")
 endif()
 
 
@@ -496,6 +499,7 @@ link_directories(
 	${SDL2_LIBRARY_DIRS} # Blindly assume other SDL bits are in same directory
 	${Boost_LIBRARY_DIR}
 	${MRI_LIBDIR}
+        ${STEAM_LIBRARY_DIR}
 )
 
 add_executable(${PROJECT_NAME} MACOSX_BUNDLE
