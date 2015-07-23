@@ -40,7 +40,26 @@
 
 #include "binding.h"
 
+//Steam stuff
+#include "steam_api.h"
+
 #include "icon.png.xxd"
+
+
+struct SteamInit {
+  SteamInit() {
+    if ( SteamAPI_Init() ) {
+      std::cout <<"Steam API initialized.\n";
+    } else {
+      std::cout <<"Steam API failed to initialize for some reason...\n";
+    }
+  }
+  ~SteamInit() {
+    SteamAPI_Shutdown();
+    std::cout <<"Steam API shut down.\n";
+  }
+};
+
 
 static void
 rgssThreadError(RGSSThreadData *rtData, const std::string &msg)
@@ -194,6 +213,9 @@ if (controller) {
   std::cout <<"Found and opened gamecontroller\n";
 }
 //END TODO
+
+	//Steam!
+	SteamInit steamStuff;
 
 
 	if (!EventThread::allocUserEvents())
