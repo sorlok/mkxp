@@ -168,7 +168,7 @@ const std::vector<std::string> achievement_names = {
   "DrillAcquired",
   "Drilled5Items",
   "Drilled10Items",
-  "SonarAcquired",
+//  "SonarAcquired",
   "Tracker",
   "Hunter",
   "MasterHunter",
