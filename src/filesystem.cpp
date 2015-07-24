@@ -451,6 +451,9 @@ void SteamSyncAchievements(const char* achieveStr)
 			userStats->SetAchievement(name.c_str());
 		}
 	}
+
+	//Now that we're done, store them all to the server.
+	userStats->StoreStats();
 }
 
 
