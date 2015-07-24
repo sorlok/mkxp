@@ -168,7 +168,6 @@ const std::vector<std::string> achievement_names = {
   "DrillAcquired",
   "Drilled5Items",
   "Drilled10Items",
-//  "SonarAcquired",
   "Tracker",
   "Hunter",
   "MasterHunter",
@@ -444,8 +443,13 @@ void SteamSyncAchievements(const char* achieveStr)
 			std::cout <<"Can't get Steam achievement \"" <<name <<"\" (" <<i <<"); unknown error.\n";
 			continue;
 		}
-		std::cout <<"ACHIEVEMENT: \"" <<name <<"\" (" <<i <<") => " <<(status?"YES":"no") <<"\n";
-		std::cout <<"    we have:" <<(ourAchieves[i]=='1'?"YES" : "no") <<"\n";
+
+		//Only update ones that we claim to have but Steam knows nothing about.
+		bool us = (ourAchieves[i]=='1');
+		if (us && !status) {
+			std::cout <<"Registering achievement: " <<name <<"\n";
+			userStats->SetAchievement(name.c_str());
+		}
 	}
 }
 
