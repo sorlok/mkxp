@@ -53,6 +53,10 @@ struct SteamInit {
     } else {
       std::cout <<"Steam API failed to initialize for some reason...\n";
     }
+
+    //Try to over-ride the screenshot key.
+    ISteamScreenshots* ss = SteamScreenshots();
+    if (ss) { ss->HookScreenshots(true); }
   }
   ~SteamInit() {
     SteamAPI_Shutdown();
