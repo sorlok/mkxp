@@ -34,13 +34,14 @@
 
 #include <SDL_ttf.h>
 
-#define BUNDLED_FONT verdana
-
 #define BUNDLED_FONT_DECL(FONT) \
 	extern unsigned char assets_##FONT##_ttf[]; \
 	extern unsigned int assets_##FONT##_ttf_len;
 
-BUNDLED_FONT_DECL(verdana)
+//#define BUNDLED_FONT verdana
+//BUNDLED_FONT_DECL(verdana)
+#define BUNDLED_FONT liberation
+BUNDLED_FONT_DECL(liberation)
 
 #define BUNDLED_FONT_D(f) assets_## f ##_ttf
 #define BUNDLED_FONT_L(f) assets_## f ##_ttf_len
@@ -176,11 +177,10 @@ _TTF_Font *SharedFontState::getFont(std::string family,
 		shState->fileSystem().openReadRaw(*ops, path, true);
 	}
 
-	// FIXME 0.9 is guesswork at this point
-//	float gamma = (96.0/45.0)*(5.0/14.0)*(size-5);
-//	font = TTF_OpenFontRW(ops, 1, gamma /** .90*/);
-//	font = TTF_OpenFontRW(ops, 1, size* 0.90f);
-	font = TTF_OpenFontRW(ops, 1, size* 0.80f);
+	//NOTE: This is all just fuzzy:
+//	font = TTF_OpenFontRW(ops, 1, size* 0.90f);  //MKXP default
+//	font = TTF_OpenFontRW(ops, 1, size* 0.80f);  //For Verdana
+	font = TTF_OpenFontRW(ops, 1, size* 0.85f);  //What we've chosen to use.
 
 	if (!font)
 		throw Exception(Exception::SDLError, "%s", SDL_GetError());
