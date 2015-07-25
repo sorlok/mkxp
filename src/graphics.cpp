@@ -821,9 +821,8 @@ void Graphics::frameReset()
 
 void Graphics::centerResizeRaise(int w, int h)
 {
-	SDL_SetWindowSize(p->threadData->window, w, h);
-	SDL_SetWindowPosition(p->threadData->window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-	SDL_RaiseWindow(p->threadData->window);
+	p->threadData->ethread->requestWindowResize(w, h);
+	p->threadData->ethread->requestWindowCenterRaise();
 }
 
 static void guardDisposed() {}
@@ -1008,6 +1007,7 @@ bool Graphics::getFullscreen() const
 void Graphics::setFullscreen(bool value)
 {
 	p->threadData->ethread->requestFullscreenMode(value);
+	p->threadData->ethread->requestWindowCenterRaise();
 }
 
 int Graphics::getDisplayWidth() const

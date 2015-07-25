@@ -81,6 +81,7 @@ enum
 {
 	REQUEST_SETFULLSCREEN = 0,
 	REQUEST_WINRESIZE,
+	REQUEST_WINCENTERRAISE,
 	REQUEST_MESSAGEBOX,
 	REQUEST_SETCURSORVISIBLE,
 
@@ -410,6 +411,11 @@ void EventThread::process(RGSSThreadData &rtData)
 				SDL_SetWindowSize(win, event.window.data1, event.window.data2);
 				break;
 
+			case REQUEST_WINCENTERRAISE:
+				SDL_SetWindowPosition(win, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+				SDL_RaiseWindow(win);
+				break;
+
 			case REQUEST_MESSAGEBOX :
 				SDL_ShowSimpleMessageBox(event.user.code,
 				                         rtData.config.game.title.c_str(),
@@ -536,6 +542,7 @@ void EventThread::setFullscreen(SDL_Window *win, bool mode)
 {
 	SDL_SetWindowFullscreen
 	        (win, mode ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+	SDL_SetWindowPosition(win, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 	fullscreen = mode;
 }
 
@@ -571,6 +578,13 @@ void EventThread::requestWindowResize(int width, int height)
 	event.type = usrIdStart + REQUEST_WINRESIZE;
 	event.window.data1 = width;
 	event.window.data2 = height;
+	SDL_PushEvent(&event);
+}
+
+void EventThread::requestWindowCenterRaise()
+{
+	SDL_Event event;
+	event.type = usrIdStart + REQUEST_WINCENTERRAISE;
 	SDL_PushEvent(&event);
 }
 

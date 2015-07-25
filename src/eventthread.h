@@ -89,6 +89,7 @@ public:
 	/* Called from RGSS thread */
 	void requestFullscreenMode(bool mode);
 	void requestWindowResize(int width, int height);
+	void requestWindowCenterRaise();
 	void requestShowCursor(bool mode);
 
 	void requestTerminate();
