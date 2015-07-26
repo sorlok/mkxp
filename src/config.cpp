@@ -151,7 +151,7 @@ void Config::read(int argc, char *argv[])
 	PO_DESC(winResizable, bool, false) \
 	PO_DESC(fullscreen, bool, false) \
 	PO_DESC(fixedAspectRatio, bool, true) \
-	PO_DESC(smoothScaling, bool, true) \
+	PO_DESC(smoothScaling, bool, false) \
 	PO_DESC(vsync, bool, false) \
 	PO_DESC(defScreenW, int, 0) \
 	PO_DESC(defScreenH, int, 0) \
@@ -159,7 +159,7 @@ void Config::read(int argc, char *argv[])
 	PO_DESC(frameSkip, bool, true) \
 	PO_DESC(syncToRefreshrate, bool, false) \
 	PO_DESC(solidFonts, bool, false) \
-	PO_DESC(subImageFix, bool, false) \
+	PO_DESC(subImageFix, bool, true) \
 	PO_DESC(gameFolder, std::string, ".") \
 	PO_DESC(anyAltToggleFS, bool, false) \
 	PO_DESC(enableReset, bool, true) \
