@@ -40,8 +40,8 @@
 
 //#define BUNDLED_FONT verdana
 //BUNDLED_FONT_DECL(verdana)
-#define BUNDLED_FONT liberation
-BUNDLED_FONT_DECL(liberation)
+#define BUNDLED_FONT droid
+BUNDLED_FONT_DECL(droid)  /* Droid Sans */
 
 #define BUNDLED_FONT_D(f) assets_## f ##_ttf
 #define BUNDLED_FONT_L(f) assets_## f ##_ttf_len
@@ -180,7 +180,7 @@ _TTF_Font *SharedFontState::getFont(std::string family,
 	//NOTE: This is all just fuzzy:
 //	font = TTF_OpenFontRW(ops, 1, size* 0.90f);  //MKXP default
 //	font = TTF_OpenFontRW(ops, 1, size* 0.80f);  //For Verdana
-	font = TTF_OpenFontRW(ops, 1, size* 0.85f);  //What we've chosen to use.
+	font = TTF_OpenFontRW(ops, 1, size* 0.81f);  //What we've chosen to use.
 
 	if (!font)
 		throw Exception(Exception::SDLError, "%s", SDL_GetError());

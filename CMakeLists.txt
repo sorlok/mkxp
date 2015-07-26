@@ -323,6 +323,8 @@ set(EMBEDDED_INPUT
 	shader/blurV.vert
 	shader/simpleMatrix.vert
 	assets/liberation.ttf
+	assets/deja.ttf
+	assets/droid.ttf
 	assets/verdana.ttf
 	assets/icon.png
 )
