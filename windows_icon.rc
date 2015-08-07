@@ -1,1 +1,26 @@
 id ICON "ld_icon.ico"
+
+1 VERSIONINFO
+FILEVERSION     1,0,0,0
+PRODUCTVERSION  1,0,0,0
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904E4"
+    BEGIN
+      VALUE "CompanyName", "White Giant RPG Studios"
+      VALUE "FileDescription", "Last Dream, The Original Experience!"
+      VALUE "FileVersion", "1.0"
+      VALUE "InternalName", "LastDream"
+      VALUE "LegalCopyright", "White Giant RPG Studios"
+      VALUE "OriginalFilename", "LastDream.exe"
+      VALUE "ProductName", "Last Dream"
+      VALUE "ProductVersion", "1.0"
+    END
+  END
+
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1252
+  END
+END
