@@ -1052,6 +1052,25 @@ void Graphics::repaintWait(const AtomicFlag &exitCond, bool checkReset)
 	if (exitCond)
 		return;
 
+//TODO: It would be great if we could dim the screen and display "resetting"...
+/*{
+IntRect r;
+r.x = 0;
+r.y = 0;
+r.w = 100;
+r.h = 100;
+Quad bq;
+bq.setColor(Vec4(0, 0, 0, 1.0f - 0.5f));
+bq.setColor(Vec4());
+bq.setTexPosRect(r,r);
+SimpleColorShader &shader = shState->shaders().simpleColor;
+shader.bind();
+shader.applyViewportProj();
+shader.setTranslation(Vec2i());
+bq.draw();
+}*/
+//END TODO
+
 	/* Repaint the screen with the last good frame we drew */
 	TEXFBO &lastFrame = p->screen.getPP().frontBuffer();
 	GLMeta::blitBeginScreen(p->winSize);
