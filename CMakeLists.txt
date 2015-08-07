@@ -274,6 +274,15 @@ set(MAIN_SOURCE
 	src/fluid-fun.cpp
 )
 
+#Windows Icon
+if (WINDOWS)
+  set(WINDOWS_RES_FILE "windows_icon.rc")
+else()
+  set(WINDOWS_RES_FILE "")
+endif()
+
+
+
 #On OS-X, we just compile boost::program_options manually.
 if(APPLE)
   set(MAIN_SOURCE 
@@ -510,6 +519,7 @@ add_executable(${PROJECT_NAME} MACOSX_BUNDLE
 	${BINDING_HEADERS}
 	${BINDING_SOURCE}
 	${EMBEDDED_SOURCE}
+        ${WINDOWS_RES_FILE}
 )
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
