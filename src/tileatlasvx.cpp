@@ -20,7 +20,6 @@
 */
 
 #include "tileatlasvx.h"
-
 #include "tilemap-common.h"
 #include "bitmap.h"
 #include "table.h"
@@ -603,6 +602,16 @@ onTile(Reader &reader, int16_t tileID,
 	}
 }
 
+
+//TODO: This is very hackish; I'm surely missing some cases, but it works for what I need it for at the moment...
+bool isSpecial(int16_t tileID) {
+	return     tileID==3198 || tileID==3194 || tileID==3196 || tileID==3582 || tileID==3966 || tileID==4350
+		|| (tileID>=4367 && tileID<=8159 && (tileID-4367)%48==0)
+		|| (tileID>=5934 && tileID<=7806 && (tileID-5934)%48==0)
+	;
+}
+
+
 static void
 readLayer(Reader &reader, const Table &data,
           const Table *flags, int ox, int oy, int w, int h, int z)
@@ -612,16 +621,39 @@ readLayer(Reader &reader, const Table &data,
 	 * the tiles in rows from bottom to top so the table extents
 	 * are added after the tile below and drawn over it. */
 
+	//...but not in certain cases. We capture these in a map.
+	std::vector<std::pair<int, int>> map_later;
+
 	for (int y = h-1; y >= 0; --y)
+	{
 		for (int x = 0; x < w; ++x)
 		{
 			int16_t tileID = tableGetWrapped(data, x+ox, y+oy, z);
-
 			if (tileID <= 0)
 				continue;
 
+			//Tiles to process AFTER are those which are special AND have special tiles above them (which are not equal to themselves).
+			if (isSpecial(tileID)) {
+				//TODO: This inner check may not be necessary; because we process the "map_later" tiles in 
+				//      reverse order, we may not need to check a tile above this one.
+				int16_t tileIDAbove = (y==0 ? 0 : tableGetWrapped(data, x+ox, y-1+oy, z));
+				if (isSpecial(tileIDAbove) && tileID!=tileIDAbove) {
+					map_later.push_back(std::make_pair(x,y));
+					continue;
+				}
+			}
+
+			//Else, process it now.
 			onTile(reader, tileID, x, y, flags);
 		}
+	}
+
+	//Now, process the map_later tiles in reverse order (since their Y-values should be descending.
+	for (auto it=map_later.rbegin(); it!=map_later.rend(); it++)
+	{
+		int16_t tileID = tableGetWrapped(data, it->first+ox, it->second+oy, z);
+		onTile(reader, tileID, it->first, it->second, flags);
+	}
 }
 
 static void
@@ -659,7 +691,6 @@ void readTiles(Reader &reader, const Table &data,
 
 	if (rgssVer >= 3)
 		readShadowLayer(reader, data, ox, oy, w, h);
-
 	readLayer(reader, data, flags, ox, oy, w, h, 2);
 }
 
