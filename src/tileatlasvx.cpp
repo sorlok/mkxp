@@ -33,6 +33,7 @@
 
 #include <assert.h>
 #include <vector>
+#include <iostream>
 
 /* Regular (A) autotile patterns */
 extern const StaticRect autotileVXRectsA[];
@@ -604,10 +605,29 @@ onTile(Reader &reader, int16_t tileID,
 
 
 //TODO: This is very hackish; I'm surely missing some cases, but it works for what I need it for at the moment...
+#define MakeTableEntries(id) || tileID==id-4 || tileID==id-2 || tileID==id-3 || tileID==id-13 || tileID==id-1 || tileID==id-12 || tileID==id-26 || tileID==id-10 || tileID==id-30 || tileID==id-46 || tileID==id-22 || tileID==id-6 || tileID==id-18 || tileID==id-8
 bool isSpecial(int16_t tileID) {
-	return     tileID==3198 || tileID==3194 || tileID==3196 || tileID==3582 || tileID==3966 || tileID==4350
-		|| (tileID>=4367 && tileID<=8159 && (tileID-4367)%48==0)
-		|| (tileID>=5934 && tileID<=7806 && (tileID-5934)%48==0)
+	return     tileID==3198 //Table1, alone, single
+                   MakeTableEntries(3198)
+                //|| tileID==3194 //Table1, alone, top
+                //|| tileID==3196 //Table1, alone, bottom
+                //|| tileID==3195 || tileID==3185 || tileID==3197 //Table1, single row
+                //|| tileID==3186 || tileID==3172 || tileID==3188 //Table1, 3 rows, top row
+                //|| tileID==3168 || tileID==3152 || tileID==3176 //Table1, 3 rows, middle row
+                //|| tileID==3192 || tileID==3180 || tileID==3190 //Table1, 3 rows, bottom row
+
+                || tileID==3582 //Table2, alone
+                   MakeTableEntries(3582)
+
+                ||  tileID==3966 //Table3, alone
+                    MakeTableEntries(3966)
+
+                || tileID==4350 //Table4, alone
+                   MakeTableEntries(4350)
+
+                //These are "normal" (non-tabling) tiles ---hopefully there are no false positives here.
+		|| (tileID>=4367 && tileID<=8159/* && (tileID-4367)%48==0*/)
+		|| (tileID>=5934 && tileID<=7806/* && (tileID-5934)%48==0*/)
 	;
 }
 
