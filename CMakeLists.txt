@@ -276,7 +276,7 @@ set(MAIN_SOURCE
 
 #Windows Icon
 if (WINDOWS)
-  set(WINDOWS_RES_FILE "windows_icon.res")
+  set(WINDOWS_RES_FILE "windows_icon.rc")
 else()
   set(WINDOWS_RES_FILE "")
 endif()
