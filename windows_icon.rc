@@ -8,13 +8,13 @@ BEGIN
   BEGIN
     BLOCK "040904E4"
     BEGIN
-      VALUE "CompanyName", "White Giant RPG Studios"
-      VALUE "FileDescription", "Last Dream, The Original Experience!"
+      VALUE "CompanyName", "N/A"
+      VALUE "FileDescription", "LD33 Game!"
       VALUE "FileVersion", "1.0"
-      VALUE "InternalName", "LastDream"
-      VALUE "LegalCopyright", "White Giant RPG Studios"
-      VALUE "OriginalFilename", "LastDream.exe"
-      VALUE "ProductName", "Last Dream"
+      VALUE "InternalName", "LD33Game"
+      VALUE "LegalCopyright", "Seth N. Hetu"
+      VALUE "OriginalFilename", "LD33Game.exe"
+      VALUE "ProductName", "LD33Game"
       VALUE "ProductVersion", "1.0"
     END
   END

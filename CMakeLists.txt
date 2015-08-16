@@ -480,13 +480,13 @@ source_group("Binding Source" FILES ${BINDING_SOURCE} ${BINDING_HEADERS})
 # Link Steamlib
 IF(LINUX)
         set(STEAM_LIBRARY_DIR "")
-	set(STEAM_LIBRARY ":../steamworks_133b/redistributable_bin/linux64/libsteam_api.so")
+	set(STEAM_LIBRARY "")
 elseif(APPLE)
-        set(STEAM_LIBRARY_DIR "steamworks_133b/redistributable_bin/osx32")
-	set(STEAM_LIBRARY "steam_api")
+        set(STEAM_LIBRARY_DIR "")
+	set(STEAM_LIBRARY "")
 else() #Windows
-        set(STEAM_LIBRARY_DIR "steamworks_133b/redistributable_bin/win64")
-	set(STEAM_LIBRARY "steam_api64")
+        set(STEAM_LIBRARY_DIR "")
+	set(STEAM_LIBRARY "")
 endif()
 
 

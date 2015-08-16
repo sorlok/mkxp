@@ -31,9 +31,6 @@ class SharedFontState;
 const char* GetPPString(const char* section, const char* key, const char* defValue, const char* filePath);
 void WritePPString(const char* section, const char* key, const char* value, const char* filePath);
 
-//Helper functions for Steam
-void SteamSyncAchievements(const char* achieveStr);
-
 class FileSystem
 {
 public:
