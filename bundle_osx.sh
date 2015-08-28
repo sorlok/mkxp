@@ -2,6 +2,8 @@
 
 #Variable!
 APPNAME="LastDream.app"
+ORIGRES="../LastDream_mkxp"
+
 APPBINARY="$APPNAME/Contents/MacOS/mkxp"
 echo "Bundling $APPNAME"
 
@@ -183,15 +185,21 @@ cp steamworks_133b/redistributable_bin/osx32/libsteam_api.dylib  $APPNAME/Conten
 install_name_tool  -change @loader_path/libsteam_api.dylib  @executable_path/../Frameworks/libsteam_api.dylib   $APPBINARY
 
 
-
-
-
 #Copy resources
-cp -r ../LastDream_mkxp/* LastDream.app/Contents/Resources/
+echo "Copying resources..."
+cp -r $ORIGRES/* $APPNAME/Contents/Resources/
 
-echo "Potential linker problems:"
+#We need a build date...
+SPECIAL_VERSION="2.1.$(date +%Y-%m-%d | sed "s|-||g")"
+echo "Build version is: $SPECIAL_VERSION"
+
+#Make an Info file!
+#cp Info.plist.in  $APPNAME/Contents/Info.plist
+#sed -i  "s|SPECIAL_VERSION_EXPAND|$SPECIAL_VERSION|"  $APPNAME/Contents/Info.plist
+cat "Info.plist.in" | sed "s|SPECIAL_VERSION_EXPAND|$SPECIAL_VERSION|" >$APPNAME/Contents/Info.plist
 
 #Now, do a sanity check.
+echo "Potential linker problems:"
 for lib in "${copied_libs[@]}"; do
   if [[ $lib == *"MacOS/mkxp"* ]]; then
     otool -L $lib | tail -n +2  | grep -e "/opt/local/lib" -e "/usr/local/lib"
