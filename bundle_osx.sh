@@ -177,6 +177,10 @@ install_name_tool  -change  /opt/X11/lib/libfreetype.6.dylib @executable_path/..
 COMMENT
 
 
+#Special case
+echo "Fixing Steam lib..."
+cp steamworks_133b/redistributable_bin/osx32/libsteam_api.dylib  $APPNAME/Contents/Frameworks/
+install_name_tool  -change @loader_path/libsteam_api.dylib  @executable_path/../Frameworks/libsteam_api.dylib   $APPBINARY
 
 
 
