@@ -34,11 +34,11 @@ containsElement () {
 
 #Keep looping and adding libraries until we're done.
 while [ "${#temp_lib[@]}" -gt "0" ] ; do
-  echo "Top of loop: ${#temp_lib[@]}"
+  #echo "Top of loop: ${#temp_lib[@]}"
   new_temp_lib=()
   for lib in "${temp_lib[@]}" ; do
     #Add it.
-    echo "Scanning Library: $lib"
+    #echo "Scanning Library: $lib"
     libraries+=($lib)
 
     #Get its dependencies.
@@ -49,7 +49,7 @@ while [ "${#temp_lib[@]}" -gt "0" ] ; do
       count=$((count+1))
       if [ $count -eq "1" ]; then
         if [[ $lib != $APPBINARY ]]; then
-         echo "SKIPPING first line: $ln"
+         #echo "SKIPPING first line: $ln"
          first=false
          continue
         fi
@@ -62,9 +62,10 @@ while [ "${#temp_lib[@]}" -gt "0" ] ; do
       fi
 
       if containsElement "$ln" "${new_temp_lib[@]}" || containsElement "$ln" "${temp_lib[@]}" ; then
-        echo "Skipping lib: $ln (already found)"
+        #echo "Skipping lib: $ln (already found)"
+        :
       else
-        echo "New lib: $ln"
+        #echo "New lib: $ln"
         new_temp_lib+=($ln)
         lib_deps+=($oldLn) #"physfs" directly.
       fi
@@ -93,7 +94,7 @@ for lib in "${lib_deps[@]}"; do
   #Extract the filename
   filename="$APPNAME/Contents/Frameworks/${lib##*/}"
   copied_libs+=($filename)
-  echo "Library mapping: $lib : $filename"
+  ##echo "Library mapping: $lib : $filename"
   cp $lib $filename
 done
 
@@ -101,10 +102,10 @@ done
 #Now, scan and update the libraries.
 echo "Re-writing dependencies."
 for lib in "${copied_libs[@]}"; do
-  echo "Replacing deps fro $lib"
+  #echo "Replacing deps fro $lib"
   for dep in "${lib_deps[@]}"; do
     filename="@executable_path/../Frameworks/${dep##*/}"
-    echo "  Replacing: $dep ; with: $filename"
+    #echo "  Replacing: $dep ; with: $filename"
     install_name_tool  -change  $dep  $filename  $lib
   done
 done
