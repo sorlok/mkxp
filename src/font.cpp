@@ -38,8 +38,8 @@
 	extern unsigned char assets_##FONT##_ttf[]; \
 	extern unsigned int assets_##FONT##_ttf_len;
 
-//#define BUNDLED_FONT verdana
-//BUNDLED_FONT_DECL(verdana)
+//#define BUNDLED_FONT liberation
+//BUNDLED_FONT_DECL(liberation)
 #define BUNDLED_FONT droid
 BUNDLED_FONT_DECL(droid)  /* Droid Sans */
 
