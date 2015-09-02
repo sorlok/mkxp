@@ -48,9 +48,8 @@ else() #Windows?
 endif()
 
 #We want as few dlls as possible on Windows
-if (WINDOWS)
-  set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
-endif()
+#NOTE: Steam also has problems on Linux with our version of GCC.
+set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
 
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.6)
