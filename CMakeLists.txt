@@ -56,7 +56,6 @@ else() #Windows?
   endif()
 endif()
 
-
 #We want as few dlls as possible on Windows, and a non-console Win32 app.
 if (WINDOWS)
   set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++  -mwindows")
