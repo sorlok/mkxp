@@ -173,7 +173,7 @@ if (WINDOWS)
       "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libiphlpapi.a")
   else()
     set(RUBY_STATIC_LIB
-      "/home/sethhetu/.rake-compiler/builds/x86_64-w64-mingw32.static/ruby-2.2.2/libmsvcrt-ruby220-static.a"
+      "/home/sethhetu/.rake-compiler/builds/x86_64-w64-mingw32.static/ruby-2.2.2/libx64-msvcrt-ruby220-static.a"
       "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libphysfs.a"
       "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libSDL2_image.a"
       "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libSDL2_ttf.a"
