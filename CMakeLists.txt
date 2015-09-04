@@ -170,7 +170,7 @@ if (WINDOWS)
       "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libspeex.a"
       "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libgmp.a"
       "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libjpeg.a"
-      "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libiphlpapi.a"
+      "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libiphlpapi.a")
   else()
     set(RUBY_STATIC_LIB
       "/home/sethhetu/.rake-compiler/builds/x86_64-w64-mingw32.static/ruby-2.2.2/libmsvcrt-ruby220-static.a"
@@ -183,9 +183,8 @@ if (WINDOWS)
       "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libspeex.a"
       "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libgmp.a"
       "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libjpeg.a"
-      "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libiphlpapi.a"
+      "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libiphlpapi.a")
   endif()
-)
 endif()
 
 
@@ -571,13 +570,12 @@ if (WINDOWS)
   if (WIN32_ONLY)
     target_include_directories(${PROJECT_NAME} PRIVATE
         "/home/sethhetu/.rake-compiler/ruby/i686-w64-mingw32.static/ruby-2.2.2/include/ruby-2.2.0/"
-        "/home/sethhetu/.rake-compiler/ruby/i686-w64-mingw32.static/ruby-2.2.2/include/ruby-2.2.0/i386-mingw32.static"
+        "/home/sethhetu/.rake-compiler/ruby/i686-w64-mingw32.static/ruby-2.2.2/include/ruby-2.2.0/i386-mingw32.static")
   else()
     target_include_directories(${PROJECT_NAME} PRIVATE
         "/home/sethhetu/.rake-compiler/ruby/x86_64-w64-mingw32.static/ruby-2.2.2/include/ruby-2.2.0/"
-        "/home/sethhetu/.rake-compiler/ruby/x86_64-w64-mingw32.static/ruby-2.2.2/include/ruby-2.2.0/x64-mingw32.static"
+        "/home/sethhetu/.rake-compiler/ruby/x86_64-w64-mingw32.static/ruby-2.2.2/include/ruby-2.2.0/x64-mingw32.static")
   endif()
-)
 endif()
 
 target_link_libraries(${PROJECT_NAME}
