@@ -45,11 +45,21 @@ elseif(APPLE)
   SET(WINDOWS OFF)
 else() #Windows?
   SET(WINDOWS ON)
+
+  #Determine Windows architecture through some hackery.
+  if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+    MESSAGE("64-bit Windows Builds are ON")
+    SET(WIN32_ONLY OFF)
+  else()
+    MESSAGE("32-bit Windows Builds are ON")
+    SET(WIN32_ONLY ON)
+  endif()
 endif()
 
-#We want as few dlls as possible on Windows
+
+#We want as few dlls as possible on Windows, and a non-console Win32 app.
 if (WINDOWS)
-  set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
+  set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++  -mwindows")
 endif()
 
 
@@ -149,8 +159,22 @@ endif()
 
 #Windows adds a whole bunch of garbage
 if (WINDOWS)
-  set(RUBY_STATIC_LIB
-      "/home/sethhetu/.rake-compiler/builds/x86_64-w64-mingw32.static/ruby-2.2.2/libx64-msvcrt-ruby220-static.a"
+  if (WIN32_ONLY)
+    set(RUBY_STATIC_LIB
+      "/home/sethhetu/.rake-compiler/builds/i686-w64-mingw32.static/ruby-2.2.2/libmsvcrt-ruby220-static.a"
+      "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libphysfs.a"
+      "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libSDL2_image.a"
+      "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libSDL2_ttf.a"
+      "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libSDL_sound.a"
+      "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libSDL2.a"
+      "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libFLAC.a"
+      "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libspeex.a"
+      "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libgmp.a"
+      "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libjpeg.a"
+      "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libiphlpapi.a"
+  else()
+    set(RUBY_STATIC_LIB
+      "/home/sethhetu/.rake-compiler/builds/x86_64-w64-mingw32.static/ruby-2.2.2/libmsvcrt-ruby220-static.a"
       "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libphysfs.a"
       "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libSDL2_image.a"
       "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libSDL2_ttf.a"
@@ -161,6 +185,7 @@ if (WINDOWS)
       "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libgmp.a"
       "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libjpeg.a"
       "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libiphlpapi.a"
+  endif()
 )
 endif()
 
@@ -485,8 +510,13 @@ elseif(APPLE)
         set(STEAM_LIBRARY_DIR "steamworks_133b/redistributable_bin/osx32")
 	set(STEAM_LIBRARY "steam_api")
 else() #Windows
-        set(STEAM_LIBRARY_DIR "steamworks_133b/redistributable_bin/win64")
-	set(STEAM_LIBRARY "steam_api64")
+  if (WIN32_ONLY)
+    set(STEAM_LIBRARY_DIR "steamworks_133b/redistributable_bin")
+    set(STEAM_LIBRARY "steam_api")
+  else()
+    set(STEAM_LIBRARY_DIR "steamworks_133b/redistributable_bin/win64")
+    set(STEAM_LIBRARY "steam_api64")
+  endif()
 endif()
 
 
@@ -539,10 +569,15 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	"steamworks_133b/"
 )
 if (WINDOWS)
-target_include_directories(${PROJECT_NAME} PRIVATE
+  if (WIN32_ONLY)
+    target_include_directories(${PROJECT_NAME} PRIVATE
+        "/home/sethhetu/.rake-compiler/ruby/i686-w64-mingw32.static/ruby-2.2.2/include/ruby-2.2.0/"
+        "/home/sethhetu/.rake-compiler/ruby/i686-w64-mingw32.static/ruby-2.2.2/include/ruby-2.2.0/i386-mingw32.static"
+  else()
+    target_include_directories(${PROJECT_NAME} PRIVATE
         "/home/sethhetu/.rake-compiler/ruby/x86_64-w64-mingw32.static/ruby-2.2.2/include/ruby-2.2.0/"
         "/home/sethhetu/.rake-compiler/ruby/x86_64-w64-mingw32.static/ruby-2.2.2/include/ruby-2.2.0/x64-mingw32.static"
-
+  endif()
 )
 endif()
 
