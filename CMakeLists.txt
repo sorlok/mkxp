@@ -41,6 +41,15 @@ ENDIF()
 #We need a Windows flag
 IF(LINUX)
   SET(WINDOWS OFF)
+
+  #Determine Linux architecture through some hackery.
+  if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+    MESSAGE("64-bit Linux Builds are ON")
+    SET(LIN32_ONLY OFF)
+  else()
+    MESSAGE("32-bit Linux Builds are ON")
+    SET(LIN32_ONLY ON)
+  endif()
 elseif(APPLE)
   SET(WINDOWS OFF)
 else() #Windows?
@@ -59,8 +68,10 @@ endif()
 #We want as few dlls as possible on Windows, and a non-console Win32 app.
 if (WINDOWS)
   set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++  -mwindows")
+elseif(LINUX)
+  #Linux static hackery (works around a steam overlay bug).
+  set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
 endif()
-
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.6)
 
@@ -185,6 +196,62 @@ if (WINDOWS)
       "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libjpeg.a"
       "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libiphlpapi.a")
   endif()
+elseif(LINUX)
+  #More static hackery
+  if (LIN32_ONLY)
+    set(RUBY_STATIC_LIB2
+      "/usr/lib/i386-linux-gnu/libfreetype.a"
+      "/usr/lib/i386-linux-gnu/libsigc-2.0.a"
+      "/usr/lib/i386-linux-gnu/libpixman-1.a"
+      "/usr/lib/i386-linux-gnu/libboost_program_options.a"
+      "/usr/lib/i386-linux-gnu/libvorbisfile.a"
+      "/usr/lib/i386-linux-gnu/libvorbis.a"
+      "/usr/lib/i386-linux-gnu/libogg.a"
+      "/usr/lib/i386-linux-gnu/libcrypt.a"
+      "/usr/lib/i386-linux-gnu/libjpeg.a"
+      "/usr/lib/i386-linux-gnu/libpng.a"
+      "/usr/lib/i386-linux-gnu/libz.a"
+    )
+  else()
+    set(RUBY_STATIC_LIB2
+      "/usr/lib/x86_64-linux-gnu/libfreetype.a"
+      "/usr/lib/x86_64-linux-gnu/libsigc-2.0.a"
+      "/usr/lib/x86_64-linux-gnu/libpixman-1.a"
+      "/usr/lib/x86_64-linux-gnu/libboost_program_options.a"
+      "/usr/lib/x86_64-linux-gnu/libvorbisfile.a"
+      "/usr/lib/x86_64-linux-gnu/libvorbis.a"
+      "/usr/lib/x86_64-linux-gnu/libogg.a"
+      "/usr/lib/x86_64-linux-gnu/libcrypt.a"
+      "/usr/lib/x86_64-linux-gnu/libjpeg.a"
+      "/usr/lib/x86_64-linux-gnu/libpng.a"
+      "/usr/lib/x86_64-linux-gnu/libz.a"
+    )
+  endif()
+
+  set(RUBY_STATIC_LIB
+    "/usr/local/lib/libruby-static.a"
+    "/usr/local/lib/libphysfs.a"
+    "/usr/local/lib/libSDL2_image.a"
+    "/usr/local/lib/libSDL2_ttf.a"
+    "/usr/local/lib/libSDL_sound.a"
+    "/usr/local/lib/libSDL2.a"
+    ${RUBY_STATIC_LIB2}
+    "pthread"
+    "dl"
+    "m")
+
+    set(SIGCXX_LIBRARIES "")
+    set(SDL2_LIBRARIES "")
+    set(SDL2_IMAGE_LIBRARIES "")
+    set(SDL2_TTF_LIBRARIES "")
+    set(SDL_SOUND_LIBRARIES "")
+    set(PHYSFS_LIBRARIES "")
+    set(PIXMAN_LIBRARIES "")
+    set(Boost_LIBRARIES "")
+    set(VORBISFILE_LIBRARIES "")
+    set(VORBIS_LIBRARIES "")
+    set(ZLIB_LIBRARY "")
+    set(MRI_LIBRARIES "")
 endif()
 
 
@@ -503,7 +570,12 @@ source_group("Binding Source" FILES ${BINDING_SOURCE} ${BINDING_HEADERS})
 # Link Steamlib
 IF(LINUX)
         set(STEAM_LIBRARY_DIR "")
-	set(STEAM_LIBRARY ":../steamworks_133b/redistributable_bin/linux64/libsteam_api.so")
+        if (LIN32_ONLY)
+  	  set(STEAM_LIBRARY ":../steamworks_133b/redistributable_bin/linux32/libsteam_api.so")
+        else()
+          set(STEAM_LIBRARY ":../steamworks_133b/redistributable_bin/linux64/libsteam_api.so")
+
+        endif()
 elseif(APPLE)
         set(STEAM_LIBRARY_DIR "steamworks_133b/redistributable_bin/osx32")
 	set(STEAM_LIBRARY "steam_api")
@@ -577,6 +649,7 @@ if (WINDOWS)
         "/home/sethhetu/.rake-compiler/ruby/x86_64-w64-mingw32.static/ruby-2.2.2/include/ruby-2.2.0/x64-mingw32.static")
   endif()
 endif()
+
 
 target_link_libraries(${PROJECT_NAME}
 	${SIGCXX_LIBRARIES}
