@@ -227,7 +227,6 @@ elseif(LINUX)
       "/usr/lib/x86_64-linux-gnu/libz.a"
     )
   endif()
-
   set(RUBY_STATIC_LIB
     "/usr/local/lib/libruby-static.a"
     "/usr/local/lib/libphysfs.a"
@@ -238,20 +237,21 @@ elseif(LINUX)
     ${RUBY_STATIC_LIB2}
     "pthread"
     "dl"
-    "m")
+    "m"
+  )
 
-    set(SIGCXX_LIBRARIES "")
-    set(SDL2_LIBRARIES "")
-    set(SDL2_IMAGE_LIBRARIES "")
-    set(SDL2_TTF_LIBRARIES "")
-    set(SDL_SOUND_LIBRARIES "")
-    set(PHYSFS_LIBRARIES "")
-    set(PIXMAN_LIBRARIES "")
-    set(Boost_LIBRARIES "")
-    set(VORBISFILE_LIBRARIES "")
-    set(VORBIS_LIBRARIES "")
-    set(ZLIB_LIBRARY "")
-    set(MRI_LIBRARIES "")
+  set(SIGCXX_LIBRARIES "")
+  set(SDL2_LIBRARIES "")
+  set(SDL2_IMAGE_LIBRARIES "")
+  set(SDL2_TTF_LIBRARIES "")
+  set(SDL_SOUND_LIBRARIES "")
+  set(PHYSFS_LIBRARIES "")
+  set(PIXMAN_LIBRARIES "")
+  set(Boost_LIBRARIES "")
+  set(VORBISFILE_LIBRARIES "")
+  set(VORBIS_LIBRARIES "")
+  set(ZLIB_LIBRARY "")
+  set(MRI_LIBRARIES "")
 endif()
 
 
@@ -649,7 +649,6 @@ if (WINDOWS)
         "/home/sethhetu/.rake-compiler/ruby/x86_64-w64-mingw32.static/ruby-2.2.2/include/ruby-2.2.0/x64-mingw32.static")
   endif()
 endif()
-
 
 target_link_libraries(${PROJECT_NAME}
 	${SIGCXX_LIBRARIES}
