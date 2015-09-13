@@ -218,10 +218,10 @@ RB_METHOD(ppGetString)
 
 	rb_get_args(argc, argv, "zzzz|", &section, &key, &defValue, &filePath RB_ARG_END);
 
-        const char* res = NULL;
-	GUARD_EXC( res = GetPPString(section, key, defValue, filePath); )
+        std::string res = "";
+	GUARD_EXC( res = GetPPString((section?section:""), (key?key:""), (defValue?defValue:""), (filePath?filePath:"")); )
 
-	return rb_str_new_cstr(res?res:"");
+	return rb_str_new_cstr(res.c_str());
 }
 
 RB_METHOD(ppWriteString)
@@ -236,7 +236,7 @@ RB_METHOD(ppWriteString)
 
 	rb_get_args(argc, argv, "zzzz|", &section, &key, &value, &filePath RB_ARG_END);
 
-	GUARD_EXC( WritePPString(section, key, value, filePath); )
+	GUARD_EXC( WritePPString((section?section:""), (key?key:""), (value?value:""), (filePath?filePath:"")); )
 
 	return Qnil;
 }

@@ -51,22 +51,22 @@
 //Generic reader/writer for profile strings.
 //"value" is either "defValue" (if reading) or the value to write.
 //returns NULL on write; a new string on read (assuming no error).
-const char* pp_read_write(bool write, std::string section, std::string key, std::string value, const char* filePath)
+std::string pp_read_write(bool write, std::string section, std::string key, std::string value, std::string filePath)
 {
 	//Make the file if it doesn't exist.
 	{
-	std::ifstream f(filePath);
+	std::ifstream f(filePath.c_str());
 	if (!f.good()) {
-		std::ofstream out(filePath);
+		std::ofstream out(filePath.c_str());
 		if (!out.good()) {
-			return value.c_str();
+			return value;
 		}
 	}
 	}
 
 	//Open the file for reading.
-	std::ifstream f(filePath);
-	if (!f.good()) { return value.c_str(); }
+	std::ifstream f(filePath.c_str());
+	if (!f.good()) { return value; }
 
 	//Stores the current section.
 	std::string currSection = "";
@@ -107,7 +107,7 @@ const char* pp_read_write(bool write, std::string section, std::string key, std:
 							foundProp = true;
 						} else {
 							//Reading: we can return early if this is what we're looking for.
-							return rhs.c_str(); //TODO: I think Ruby takes ownership...
+							return rhs;
 						}
 					}
 				}
@@ -123,7 +123,7 @@ const char* pp_read_write(bool write, std::string section, std::string key, std:
 
 	if (write) {
 		//Write the updated file.
-		std::ofstream out(filePath);
+		std::ofstream out(filePath.c_str());
 		if (out.good()) {
 			out <<buff.str();
 
@@ -138,29 +138,29 @@ const char* pp_read_write(bool write, std::string section, std::string key, std:
 				out <<key <<"=" <<value <<"\n";
 			}
 		}
-		return value.c_str();
+		return value;
 	} else {
 		//Return the default value.
-		return value.c_str();
+		return value;
 	}
 }
 
 //These vaguely mimic the Windows ini functions. They are designed to be as simple as possible, and don't handle anything that reacts to a null pointer.
-const char* GetPPString(const char* section, const char* key, const char* defValue, const char* filePath)
+std::string GetPPString(std::string section, std::string key, std::string defValue, std::string filePath)
 {
 	//Null path?
-	if (!filePath) { return NULL; }
+	if (filePath.empty()) { return defValue; }
 
 	//Now, use our generic reader/writer function, converting strings as you go.
-	return pp_read_write(false, (section?section:""), (key?key:""), (defValue?defValue:""), filePath);
+	return pp_read_write(false, section, key, defValue, filePath);
 }
-void WritePPString(const char* section, const char* key, const char* value, const char* filePath)
+void WritePPString(std::string section, std::string key, std::string value, std::string filePath)
 {
 	//Null path?
-	if (!filePath) { return; }
+	if (filePath.empty()) { return; }
 
 	//Now, use our generic reader/writer function, converting strings as you go.
-	pp_read_write(true, (section?section:""), (key?key:""), (value?value:""), filePath);
+	pp_read_write(true, section, key, value, filePath);
 }
 
 //Mapping from LastDream ID to achievement name.

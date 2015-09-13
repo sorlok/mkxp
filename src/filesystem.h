@@ -22,14 +22,15 @@
 #ifndef FILESYSTEM_H
 #define FILESYSTEM_H
 
+#include <string>
 #include <SDL_rwops.h>
 
 struct FileSystemPrivate;
 class SharedFontState;
 
 //Helper functions for Ini-Style file handling.
-const char* GetPPString(const char* section, const char* key, const char* defValue, const char* filePath);
-void WritePPString(const char* section, const char* key, const char* value, const char* filePath);
+std::string GetPPString(std::string section, std::string key, std::string defValue, std::string filePath);
+void WritePPString(std::string section, std::string key, std::string value, std::string filePath);
 
 //Helper functions for Steam
 void SteamSyncAchievements(const char* achieveStr);
