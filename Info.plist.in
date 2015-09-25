@@ -4,7 +4,7 @@
 <dict>
   <!-- The Main Binary and its icon (in Resources) -->
   <key>CFBundleExecutable</key>
-  <string>MacOS/mkxp</string>
+  <string>mkxp</string>
   <key>CFBundleIconFile</key>
   <string>ld_icon</string>
 

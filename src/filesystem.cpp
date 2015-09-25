@@ -163,14 +163,13 @@ void WritePPString(std::string section, std::string key, std::string value, std:
 	pp_read_write(true, section, key, value, filePath);
 }
 
-//Mapping from LastDream ID to achievement name.
-//(Don't want to use libc++11 on OS-X just yet, so no initializer list.)
+//Mapping from achievement ID to achievement name.
 namespace {
-//Use the get_* functions to access this; they initialize it properly.
+//User apps should call SteamInitAchievementNames() to set this list.
 std::vector<std::string> achievement_names;
 
 size_t get_achievements_size() {
-  if (achievement_names.empty()) {
+/*  if (achievement_names.empty()) {
     achievement_names.push_back("DrillAcquired");
     achievement_names.push_back("Drilled5Items");
     achievement_names.push_back("Drilled10Items");
@@ -408,11 +407,12 @@ size_t get_achievements_size() {
     achievement_names.push_back("Speedster");
     achievement_names.push_back("SpeedDemon");
   }
+*/
   return achievement_names.size();
 }
 
 std::string get_achievement_name(unsigned int id) {
-	if (id<get_achievements_size()) { //Initializes the vector.
+	if (id<get_achievements_size()) {
 		return achievement_names.at(id);
 	}
 	return "";
@@ -420,6 +420,22 @@ std::string get_achievement_name(unsigned int id) {
 
 } //End un-named namespace.
 
+
+
+void SteamInitAchievementNames(std::string achieveNames)
+{
+    //Reset
+    achievement_names.clear();
+
+    //Split based on ":" character.
+    std::string name;
+    std::stringstream input(achieveNames);
+    while(std::getline(input, name, ':')) {
+        achievement_names.push_back(name);
+    }
+
+    std::cout <<"Added " <<achievement_names.size() <<" achievement names.\n";
+}
 
 
 
@@ -456,6 +472,9 @@ void SteamSyncAchievements(const char* achieveStr)
 	//Check every one.
 	for (unsigned int i=0; i<nm; i++) {
 		std::string name = get_achievement_name(i);
+        if (name.empty()) {
+            continue;
+        }
 		bool status = false;
 		if (!userStats->GetAchievement(name.c_str(), &status)) {
 			std::cout <<"Can't get Steam achievement \"" <<name <<"\" (" <<i <<"); unknown error.\n";

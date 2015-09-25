@@ -33,6 +33,7 @@ std::string GetPPString(std::string section, std::string key, std::string defVal
 void WritePPString(std::string section, std::string key, std::string value, std::string filePath);
 
 //Helper functions for Steam
+void SteamInitAchievementNames(std::string achieveNames);
 void SteamSyncAchievements(const char* achieveStr);
 
 class FileSystem

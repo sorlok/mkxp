@@ -73,7 +73,7 @@ elseif(LINUX)
   set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
 endif()
 
-set(CMAKE_OSX_DEPLOYMENT_TARGET 10.6)
+set(CMAKE_OSX_DEPLOYMENT_TARGET 10.7)
 
 IF(LINUX)
 	if(CMAKE_SIZEOF_VOID_P MATCHES "8" AND NOT(FORCE32) )

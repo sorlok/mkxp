@@ -242,6 +242,21 @@ RB_METHOD(ppWriteString)
 }
 
 
+RB_METHOD(steamAchieveInit)
+{
+	RB_UNUSED_PARAM;
+
+	//This contains every steam achievement name, separated by a ":"
+	const char* achieveStr = "";
+
+	rb_get_args(argc, argv, "z|", &achieveStr RB_ARG_END);
+
+	GUARD_EXC( SteamInitAchievementNames(achieveStr); )
+
+	return Qnil;
+}
+
+
 RB_METHOD(steamAchieveSync)
 {
 	RB_UNUSED_PARAM;
@@ -270,6 +285,7 @@ fileIntBindingInit()
 	//Special module: SteamAchievements
 	{
 	VALUE module = rb_define_module("SteamAchievements");
+	_rb_define_module_function(module, "init_names", steamAchieveInit);
 	_rb_define_module_function(module, "sync_all", steamAchieveSync);
 	}
 

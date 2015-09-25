@@ -3,6 +3,7 @@
 #Variable!
 APPNAME="LastDream.app"
 ORIGRES="../LastDream_mkxp"
+BNDLFLDR="./bundle"  #Where we put the final app
 
 APPBINARY="$APPNAME/Contents/MacOS/mkxp"
 echo "Bundling $APPNAME"
@@ -10,8 +11,10 @@ echo "Bundling $APPNAME"
 
 #Prepare a bundle for your App.
 rm -rf $APPNAME
+rm -rf $BNDLFLDR
 
 #Make directory structure
+mkdir $BNDLFLDR
 cp -r build/mkxp.app $APPNAME
 rm -rf $APPNAME/Contents/Frameworks
 mkdir $APPNAME/Contents/Frameworks
@@ -113,72 +116,6 @@ for lib in "${copied_libs[@]}"; do
 done
 
 
-
-<<"COMMENT"
->>>>>>> 739beb9... Beefed up the bundler script to really scan every library (recursively) and modify all listed dependencies.
-
-#Copy over libs
-cp /opt/local/lib/libsigc-2.0.0.dylib  LastDream.app/Contents/Frameworks/
-cp /opt/local/lib/libSDL2-2.0.0.dylib  LastDream.app/Contents/Frameworks/
-cp /opt/local/lib/libSDL2_image-2.0.0.dylib  LastDream.app/Contents/Frameworks/
-cp /opt/local/lib/libSDL2_ttf-2.0.0.dylib  LastDream.app/Contents/Frameworks/
-cp /opt/local/lib/libSDL_sound-1.0.1.dylib  LastDream.app/Contents/Frameworks/
-cp /opt/local/lib/libphysfs.1.dylib  LastDream.app/Contents/Frameworks/
-cp /opt/local/lib/libpixman-1.0.dylib  LastDream.app/Contents/Frameworks/
-cp /opt/local/lib/libvorbisfile.3.dylib  LastDream.app/Contents/Frameworks/
-cp /opt/local/lib/libz.1.dylib  LastDream.app/Contents/Frameworks/
-cp /opt/local/lib/libopenal.1.dylib  LastDream.app/Contents/Frameworks/
-cp /opt/local/lib/libiconv.2.dylib  LastDream.app/Contents/Frameworks/
-cp steamworks_133b/redistributable_bin/osx32/libsteam_api.dylib  LastDream.app/Contents/Frameworks/
-
-#Make an Info file!
-cp Info.plist.in  LastDream.app/Contents/Info.plist
-
-#Copy our Icon over!
-cp ld_icon.ico LastDream.app/Contents/Resources/
-
-
-#Relink libs
-install_name_tool  -change  /opt/local/lib/libsigc-2.0.0.dylib  @executable_path/../Frameworks/libsigc-2.0.0.dylib  LastDream.app/Contents/MacOS/mkxp 
-install_name_tool  -change  /opt/local/lib/libSDL2-2.0.0.dylib   @executable_path/../Frameworks/libSDL2-2.0.0.dylib    LastDream.app/Contents/MacOS/mkxp 
-install_name_tool  -change  /opt/local/lib/libSDL2_image-2.0.0.dylib  @executable_path/../Frameworks/libSDL2_image-2.0.0.dylib    LastDream.app/Contents/MacOS/mkxp 
-install_name_tool  -change   /opt/local/lib/libSDL2_ttf-2.0.0.dylib  @executable_path/../Frameworks/libSDL2_ttf-2.0.0.dylib    LastDream.app/Contents/MacOS/mkxp 
-install_name_tool  -change   /opt/local/lib/libSDL_sound-1.0.1.dylib @executable_path/../Frameworks/libSDL_sound-1.0.1.dylib    LastDream.app/Contents/MacOS/mkxp 
-install_name_tool  -change   libphysfs.1.dylib @executable_path/../Frameworks/libphysfs.1.dylib    LastDream.app/Contents/MacOS/mkxp 
-install_name_tool  -change   /opt/local/lib/libpixman-1.0.dylib  @executable_path/../Frameworks/libpixman-1.0.dylib    LastDream.app/Contents/MacOS/mkxp 
-install_name_tool  -change  /opt/local/lib/libvorbisfile.3.dylib @executable_path/../Frameworks/libvorbisfile.3.dylib   LastDream.app/Contents/MacOS/mkxp 
-install_name_tool  -change  /opt/local/lib/libz.1.dylib @executable_path/../Frameworks/libz.1.dylib   LastDream.app/Contents/MacOS/mkxp 
-install_name_tool  -change  /opt/local/lib/libopenal.1.dylib @executable_path/../Frameworks/libopenal.1.dylib   LastDream.app/Contents/MacOS/mkxp 
-install_name_tool  -change /opt/local/lib/libiconv.2.dylib @executable_path/../Frameworks/libiconv.2.dylib   LastDream.app/Contents/MacOS/mkxp 
-
-#Steam is weird
-install_name_tool  -change @loader_path/libsteam_api.dylib  @executable_path/../Frameworks/libsteam_api.dylib   LastDream.app/Contents/MacOS/mkxp
-
-
-#TEMP
-install_name_tool  -change  /opt/local/lib/libSDL2-2.0.0.dylib    @executable_path/../Frameworks/libSDL2-2.0.0.dylib    Trump3016.app/Contents/Frameworks/libSDL2_image-2.0.0.dylib
-install_name_tool  -change /opt/local/lib/libiconv.2.dylib @executable_path/../Frameworks/libiconv.2.dylib   Trump3016.app/Contents/Frameworks/libSDL2_image-2.0.0.dylib 
-install_name_tool  -change  /opt/local/lib/libz.1.dylib @executable_path/../Frameworks/libz.1.dylib   Trump3016.app/Contents/Frameworks/libSDL2_ttf-2.0.0.dylib 
-install_name_tool  -change  /opt/local/lib/libSDL2-2.0.0.dylib    @executable_path/../Frameworks/libSDL2-2.0.0.dylib    Trump3016.app/Contents/Frameworks/libSDL2_ttf-2.0.0.dylib
-install_name_tool  -change /opt/local/lib/libiconv.2.dylib @executable_path/../Frameworks/libiconv.2.dylib   Trump3016.app/Contents/Frameworks/libSDL2_ttf-2.0.0.dylib 
-install_name_tool  -change  /opt/local/lib/libSDL2-2.0.0.dylib    @executable_path/../Frameworks/libSDL2-2.0.0.dylib    Trump3016.app/Contents/Frameworks/libSDL_sound-1.0.1.dylib
-install_name_tool  -change /opt/local/lib/libiconv.2.dylib @executable_path/../Frameworks/libiconv.2.dylib   Trump3016.app/Contents/Frameworks/libSDL_sound-1.0.1.dylib 
-install_name_tool  -change  /opt/local/lib/libvorbisfile.3.dylib @executable_path/../Frameworks/libvorbisfile.3.dylib   Trump3016.app/Contents/Frameworks/libSDL_sound-1.0.1.dylib 
-install_name_tool  -change  /opt/local/lib/libvorbis.0.dylib   @executable_path/../Frameworks/libvorbis.0.dylib   Trump3016.app/Contents/Frameworks/libSDL_sound-1.0.1.dylib 
-install_name_tool  -change  /opt/local/lib/libFLAC.8.dylib   @executable_path/../Frameworks/libFLAC.8.dylib   Trump3016.app/Contents/Frameworks/libSDL_sound-1.0.1.dylib 
-install_name_tool  -change  /opt/local/lib/libogg.0.dylib   @executable_path/../Frameworks/libogg.0.dylib   Trump3016.app/Contents/Frameworks/libSDL_sound-1.0.1.dylib 
-install_name_tool  -change  /opt/local/lib/libspeex.1.dylib   @executable_path/../Frameworks/libspeex.1.dylib   Trump3016.app/Contents/Frameworks/libSDL_sound-1.0.1.dylib 
-install_name_tool  -change  /opt/local/lib/libogg.0.dylib   @executable_path/../Frameworks/libogg.0.dylib   Trump3016.app/Contents/Frameworks/libFLAC.8.dylib 
-install_name_tool  -change  /opt/local/lib/libogg.0.dylib   @executable_path/../Frameworks/libogg.0.dylib   Trump3016.app/Contents/Frameworks/libvorbis.0.dylib
-install_name_tool  -change  /opt/local/lib/libvorbis.0.dylib   @executable_path/../Frameworks/libvorbis.0.dylib   Trump3016.app/Contents/Frameworks/libvorbisfile.3.dylib 
-install_name_tool  -change  /opt/local/lib/libogg.0.dylib   @executable_path/../Frameworks/libogg.0.dylib   Trump3016.app/Contents/Frameworks/libvorbisfile.3.dylib
-
-install_name_tool  -change  /opt/local/lib/libbz2.1.0.dylib @executable_path/../Frameworks/libbz2.1.0.dylib   Trump3016.app/Contents/Frameworks/libSDL2_ttf-2.0.0.dylib 
-install_name_tool  -change  /opt/X11/lib/libfreetype.6.dylib @executable_path/../Frameworks/libfreetype.6.dylib   Trump3016.app/Contents/Frameworks/libSDL2_ttf-2.0.0.dylib 
-
-COMMENT
-
-
 #Special case
 echo "Fixing Steam lib..."
 cp steamworks_133b/redistributable_bin/osx32/libsteam_api.dylib  $APPNAME/Contents/Frameworks/
@@ -187,19 +124,32 @@ install_name_tool  -change @loader_path/libsteam_api.dylib  @executable_path/../
 
 #Copy resources
 echo "Copying resources..."
-cp -r $ORIGRES/* $APPNAME/Contents/Resources/
+cp -r $ORIGRES/Audio $APPNAME/Contents/Resources/
+cp -r $ORIGRES/Data $APPNAME/Contents/Resources/
+cp -r $ORIGRES/Fonts $APPNAME/Contents/Resources/
+cp -r $ORIGRES/Graphics $APPNAME/Contents/Resources/
+cp -r $ORIGRES/swapxt $APPNAME/Contents/Resources/
+cp -r $ORIGRES/*README* $APPNAME/Contents/Resources/
+cp -r $ORIGRES/ld_icon.icns $APPNAME/Contents/Resources/
+cp -r $ORIGRES/mkxp.conf $APPNAME/Contents/Resources/
+cp -r $ORIGRES/steam_appid.txt $APPNAME/Contents/Resources/
+
 
 #We need a build date...
 SPECIAL_VERSION="2.1.$(date +%Y-%m-%d | sed "s|-||g")"
 echo "Build version is: $SPECIAL_VERSION"
 
-#Make an Info file!
-#cp Info.plist.in  $APPNAME/Contents/Info.plist
-#sed -i  "s|SPECIAL_VERSION_EXPAND|$SPECIAL_VERSION|"  $APPNAME/Contents/Info.plist
+#Make an Info file! Copy the default Game settings!
 cat "Info.plist.in" | sed "s|SPECIAL_VERSION_EXPAND|$SPECIAL_VERSION|" >$APPNAME/Contents/Info.plist
+cp -r Game.ini.default $APPNAME/Contents/Resources/Game.ini
+
+#Do Valve's weird dance.
+echo "Steamifying..."
+appid=$(head -n 1 $ORIGRES/steam_appid.txt)
+/Applications/ContentPrep.app/Contents/MacOS/contentprep.py --console --source=$APPNAME  --dest=$BNDLFLDR  --noscramble  --appid=$appid
 
 #Now, do a sanity check.
-echo "Potential linker problems:"
+echo "Checking for potential linker problems..."
 for lib in "${copied_libs[@]}"; do
   if [[ $lib == *"MacOS/mkxp"* ]]; then
     otool -L $lib | tail -n +2  | grep -e "/opt/local/lib" -e "/usr/local/lib"
@@ -207,7 +157,8 @@ for lib in "${copied_libs[@]}"; do
     otool -L $lib | tail -n +3  | grep -e "/opt/local/lib" -e "/usr/local/lib"
   fi
 done
+echo "Potential problems (if any) listed above."
 
-echo "Done"
+echo "Done; your Steam-bundled app is in \"bundle\"."
 
 
