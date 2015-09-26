@@ -169,245 +169,6 @@ namespace {
 std::vector<std::string> achievement_names;
 
 size_t get_achievements_size() {
-/*  if (achievement_names.empty()) {
-    achievement_names.push_back("DrillAcquired");
-    achievement_names.push_back("Drilled5Items");
-    achievement_names.push_back("Drilled10Items");
-    achievement_names.push_back("Tracker");
-    achievement_names.push_back("Hunter");
-    achievement_names.push_back("MasterHunter");
-    achievement_names.push_back("TerranSavior");
-    achievement_names.push_back("HaltHelios");
-    achievement_names.push_back("CrushHelios");
-    achievement_names.push_back("DefeatDarkLord");
-    achievement_names.push_back("StrongEnough");
-    achievement_names.push_back("ReleaseKraken");
-    achievement_names.push_back("CrushKraken");
-    achievement_names.push_back("MagiGuardian");
-    achievement_names.push_back("MurderedMagi");
-    achievement_names.push_back("CCDrifter");
-    achievement_names.push_back("CCWanderer");
-    achievement_names.push_back("CCExplorer");
-    achievement_names.push_back("CCCartographer");
-    achievement_names.push_back("Completionist");
-    achievement_names.push_back("AboveBeyond");
-    achievement_names.push_back("TerranChampion");
-    achievement_names.push_back("LegendaryWarrior");
-    achievement_names.push_back("MonsterCrippler");
-    achievement_names.push_back("MonsterMaimer");
-    achievement_names.push_back("MonsterDispatcher");
-    achievement_names.push_back("MonsterPunisher");
-    achievement_names.push_back("MonsterDestroyer");
-    achievement_names.push_back("MonsterEradictor");
-    achievement_names.push_back("MonsterAnnihilator");
-    achievement_names.push_back("Submariner");
-    achievement_names.push_back("BlueMoaTamer");
-    achievement_names.push_back("AbyssalAdventurer");
-    achievement_names.push_back("AbyssalPathfinder");
-    achievement_names.push_back("AbyssalTrailblazer");
-    achievement_names.push_back("AbyssalExplorer");
-    achievement_names.push_back("MasterSpelunker");
-    achievement_names.push_back("ECDrifter");
-    achievement_names.push_back("ECWanderer");
-    achievement_names.push_back("ECExplorer");
-    achievement_names.push_back("ECCartographer");
-    achievement_names.push_back("LeadFeet");
-    achievement_names.push_back("NotAfraidBattle");
-    achievement_names.push_back("NoCoward");
-    achievement_names.push_back("FightLikeMan");
-    achievement_names.push_back("NeverRunBattle");
-    achievement_names.push_back("ThievesHideout");
-    achievement_names.push_back("SkeletonKey");
-    achievement_names.push_back("BanditKiller");
-    achievement_names.push_back("LeaveNoDoorLocked");
-    achievement_names.push_back("Gambler");
-    achievement_names.push_back("HotStreak");
-    achievement_names.push_back("GamblingAddict");
-    achievement_names.push_back("CasinoVIP");
-    achievement_names.push_back("HighRoller");
-    achievement_names.push_back("MysticalExplorer");
-    achievement_names.push_back("RevealingMystery");
-    achievement_names.push_back("MysteriousChampion");
-    achievement_names.push_back("NCDrifter");
-    achievement_names.push_back("NCWanderer");
-    achievement_names.push_back("NCExplorer");
-    achievement_names.push_back("NCCartographer");
-    achievement_names.push_back("Overleveled");
-    achievement_names.push_back("Overpowered");
-    achievement_names.push_back("Grinder");
-    achievement_names.push_back("GodlikeStrength");
-    achievement_names.push_back("TendencyGettingLost");
-    achievement_names.push_back("HereThere");
-    achievement_names.push_back("RamblingMan");
-    achievement_names.push_back("WanderingSoul");
-    achievement_names.push_back("WellTraveled");
-    achievement_names.push_back("WorldTraveler");
-    achievement_names.push_back("YouReallyGetAround");
-    achievement_names.push_back("AroundWorld");
-    achievement_names.push_back("LeaveNoStoneUnturned");
-    achievement_names.push_back("ThereBackAgain");
-    achievement_names.push_back("Miner");
-    achievement_names.push_back("Dredger");
-    achievement_names.push_back("Sapper");
-    achievement_names.push_back("Prospector");
-    achievement_names.push_back("Mole");
-    achievement_names.push_back("Bombadier");
-    achievement_names.push_back("Excavator");
-    achievement_names.push_back("VillageSky");
-    achievement_names.push_back("UnderSea");
-    achievement_names.push_back("BefriendDwarves");
-    achievement_names.push_back("NWCDrifter");
-    achievement_names.push_back("NWCWanderer");
-    achievement_names.push_back("NWCExplorer");
-    achievement_names.push_back("NWCCartographer");
-    achievement_names.push_back("WornSoles");
-    achievement_names.push_back("WearyTraveler");
-    achievement_names.push_back("FewShortcuts");
-    achievement_names.push_back("SwiftFoot");
-    achievement_names.push_back("WingedShoes");
-    achievement_names.push_back("AmateurPuzzler");
-    achievement_names.push_back("PuzzleDabbler");
-    achievement_names.push_back("PuzzleApprentice");
-    achievement_names.push_back("CasualPuzzler");
-    achievement_names.push_back("PuzzleSolver");
-    achievement_names.push_back("AboveAveragePuzzler");
-    achievement_names.push_back("SuperiorPuzzler");
-    achievement_names.push_back("PuzzleLover");
-    achievement_names.push_back("Brainiac");
-    achievement_names.push_back("PuzzleWizard");
-    achievement_names.push_back("RapidRescue");
-    achievement_names.push_back("DespairNoMore");
-    achievement_names.push_back("HelpingHand");
-    achievement_names.push_back("FriendAsgard");
-    achievement_names.push_back("AfraidDark");
-    achievement_names.push_back("HighJumper");
-    achievement_names.push_back("BellyBeast");
-    achievement_names.push_back("NoHelpNecessary");
-    achievement_names.push_back("MagiMaster");
-    achievement_names.push_back("DoItYourself");
-    achievement_names.push_back("GodlikeGear");
-    achievement_names.push_back("UltimateChallenge");
-    achievement_names.push_back("Knight");
-    achievement_names.push_back("Monk");
-    achievement_names.push_back("Thief");
-    achievement_names.push_back("HunterCharacter");
-    achievement_names.push_back("GrayMage");
-    achievement_names.push_back("WhiteMage");
-    achievement_names.push_back("BlackMage");
-    achievement_names.push_back("Engineer");
-    achievement_names.push_back("MoaForestExplorer");
-    achievement_names.push_back("AvidSubmariner");
-    achievement_names.push_back("AvidFisherman");
-    achievement_names.push_back("SCDrifter");
-    achievement_names.push_back("SCWanderer");
-    achievement_names.push_back("SCExplorer");
-    achievement_names.push_back("SCCartographer");
-    achievement_names.push_back("SporadicBoarder");
-    achievement_names.push_back("RollingStone");
-    achievement_names.push_back("Nomad");
-    achievement_names.push_back("RoughingIt");
-    achievement_names.push_back("NoMoreGoldfish");
-    achievement_names.push_back("WeekendFisherman");
-    achievement_names.push_back("NeverHungry");
-    achievement_names.push_back("GiantsSea");
-    achievement_names.push_back("MasterFisherman");
-    achievement_names.push_back("BeginnerLuck");
-    achievement_names.push_back("PickingUpSpeed");
-    achievement_names.push_back("MoaMaster");
-    achievement_names.push_back("MineCarter");
-    achievement_names.push_back("MineCartMadness");
-    achievement_names.push_back("MineCartMaster");
-    achievement_names.push_back("CIDrifter");
-    achievement_names.push_back("CIWanderer");
-    achievement_names.push_back("CIExplorer");
-    achievement_names.push_back("CICartographer");
-    achievement_names.push_back("OnlyDesignatedLocations");
-    achievement_names.push_back("NoRestWeary");
-    achievement_names.push_back("Sonar");
-    achievement_names.push_back("SonarNovice");
-    achievement_names.push_back("SonarOperator");
-    achievement_names.push_back("SonarTinkerer");
-    achievement_names.push_back("SonarExplorer");
-    achievement_names.push_back("SonarSpecialist");
-    achievement_names.push_back("SonarVeteran");
-    achievement_names.push_back("SonarProfessional");
-    achievement_names.push_back("SonarWizard");
-    achievement_names.push_back("SonarExpert");
-    achievement_names.push_back("SonarMaster");
-    achievement_names.push_back("Brawler");
-    achievement_names.push_back("Fighter");
-    achievement_names.push_back("Dueler");
-    achievement_names.push_back("Gladiator");
-    achievement_names.push_back("GodArena");
-    achievement_names.push_back("DefeatDaedalus");
-    achievement_names.push_back("DoubleDefeat");
-    achievement_names.push_back("MazeMaster");
-    achievement_names.push_back("OIDrifter");
-    achievement_names.push_back("OIWanderer");
-    achievement_names.push_back("OIExplorer");
-    achievement_names.push_back("OICartrographer");
-    achievement_names.push_back("InfrequentSaver");
-    achievement_names.push_back("MiserlySaver");
-    achievement_names.push_back("ScarceSaver");
-    achievement_names.push_back("WorthTheRisk");
-    achievement_names.push_back("FeetFire");
-    achievement_names.push_back("FireExtinguisher");
-    achievement_names.push_back("GuardMauler");
-    achievement_names.push_back("MonsterChaser");
-    achievement_names.push_back("MonsterTracker");
-    achievement_names.push_back("MonsterStalker");
-    achievement_names.push_back("MonsterHunter");
-    achievement_names.push_back("MonsterButcher");
-    achievement_names.push_back("MonsterExecutioner");
-    achievement_names.push_back("MonsterBane");
-    achievement_names.push_back("MonsterAssassin");
-    achievement_names.push_back("BlueWhale");
-    achievement_names.push_back("GiantSquid");
-    achievement_names.push_back("GiantSea");
-    achievement_names.push_back("SaltwaterFish");
-    achievement_names.push_back("IcewaterFish");
-    achievement_names.push_back("FreshwaterFish");
-    achievement_names.push_back("HighFish");
-    achievement_names.push_back("AllSwimmingSpecies");
-    achievement_names.push_back("SWCDrifter");
-    achievement_names.push_back("SWCWanderer");
-    achievement_names.push_back("SWCExplorer");
-    achievement_names.push_back("SWCCartographer");
-    achievement_names.push_back("MobMonsters");
-    achievement_names.push_back("EndlessMonsterHordes");
-    achievement_names.push_back("PumpBellows");
-    achievement_names.push_back("SynthesizeThis");
-    achievement_names.push_back("SynthesizingFool");
-    achievement_names.push_back("SynthesisSnob");
-    achievement_names.push_back("BrokkerApprentice");
-    achievement_names.push_back("FullyOutfitted");
-    achievement_names.push_back("CantGetEnough");
-    achievement_names.push_back("MasterBlacksmith");
-    achievement_names.push_back("JustFewRecipes");
-    achievement_names.push_back("BuildingCookbook");
-    achievement_names.push_back("RecipeGatherer");
-    achievement_names.push_back("RecipeCollector");
-    achievement_names.push_back("PileRecipes");
-    achievement_names.push_back("RecipeHoarder");
-    achievement_names.push_back("NearlyComplete");
-    achievement_names.push_back("RecipeMaster");
-    achievement_names.push_back("JailBreak");
-    achievement_names.push_back("RosettaStone");
-    achievement_names.push_back("TerranDrifter");
-    achievement_names.push_back("TerranWanderer");
-    achievement_names.push_back("TerranExplorer");
-    achievement_names.push_back("TerranCartographer");
-    achievement_names.push_back("TerranTreasureMaster");
-    achievement_names.push_back("FECDrifter");
-    achievement_names.push_back("FECWanderer");
-    achievement_names.push_back("FECExplorer");
-    achievement_names.push_back("FECCartographer");
-    achievement_names.push_back("PushingPace");
-    achievement_names.push_back("Sprinter");
-    achievement_names.push_back("Speedster");
-    achievement_names.push_back("SpeedDemon");
-  }
-*/
   return achievement_names.size();
 }
 
@@ -422,7 +183,7 @@ std::string get_achievement_name(unsigned int id) {
 
 
 
-void SteamInitAchievementNames(std::string achieveNames)
+void SteamInitAchievementNames(std::string achieveNames, int numAchieves)
 {
     //Reset
     achievement_names.clear();
@@ -434,16 +195,21 @@ void SteamInitAchievementNames(std::string achieveNames)
         achievement_names.push_back(name);
     }
 
-    std::cout <<"Added " <<achievement_names.size() <<" achievement names.\n";
+    //Sanity check
+    if (achievement_names.size() != numAchieves) {
+      std::cout <<"ERROR, expected " <<numAchieves <<" achievements, but found " <<achievement_names.size() <<"; resetting to 0.\n";
+      achievement_names.clear();
+    } else {
+      std::cout <<"Added " <<achievement_names.size() <<" achievement names.\n";
+    }
 }
 
 
 
-void SteamSyncAchievements(const char* achieveStr)
+void SteamSyncAchievements(std::string achieveStr)
 {
 	//Sanity check
-	std::string ourAchieves(achieveStr);
-	if (ourAchieves.size() != get_achievements_size()) {
+	if (achieveStr.size() != get_achievements_size()) {
 		std::cout <<"Steam achievements string size mismatch (client).\n";
 		return;
 	}
@@ -482,7 +248,7 @@ void SteamSyncAchievements(const char* achieveStr)
 		}
 
 		//Only update ones that we claim to have but Steam knows nothing about.
-		bool us = (ourAchieves[i]=='1');
+		bool us = (achieveStr[i]=='1');
 		if (us && !status) {
 			std::cout <<"Registering achievement: " <<name <<"\n";
 			userStats->SetAchievement(name.c_str());

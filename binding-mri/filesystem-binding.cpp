@@ -248,10 +248,11 @@ RB_METHOD(steamAchieveInit)
 
 	//This contains every steam achievement name, separated by a ":"
 	const char* achieveStr = "";
+	int numAchievements = 0;
 
-	rb_get_args(argc, argv, "z|", &achieveStr RB_ARG_END);
+	rb_get_args(argc, argv, "zi|", &achieveStr, &numAchievements RB_ARG_END);
 
-	GUARD_EXC( SteamInitAchievementNames(achieveStr); )
+	GUARD_EXC( SteamInitAchievementNames(achieveStr, numAchievements); )
 
 	return Qnil;
 }
