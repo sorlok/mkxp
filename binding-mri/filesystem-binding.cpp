@@ -291,7 +291,7 @@ RB_METHOD(configOverGetVsync)
 	bool res = false;
 	GUARD_EXC( res=shState->getConfigVsync(); )
 
-	return rb_int_new(res);
+	return rb_bool_new(res);
 }
 
 RB_METHOD(configOverSetSmooth)
@@ -313,7 +313,7 @@ RB_METHOD(configOverGetSmooth)
 	bool res = false;
 	GUARD_EXC( res=shState->getConfigSmooth(); )
 
-	return rb_int_new(res);
+	return rb_bool_new(res);
 }
 
 
