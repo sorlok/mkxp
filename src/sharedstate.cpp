@@ -366,6 +366,26 @@ unsigned int SharedState::genTimeStamp()
 	return p->stampCounter++;
 }
 
+void SharedState::overrideConfigSmooth(bool val)
+{
+	p->config.smoothScaling = val;
+}
+
+bool SharedState::getConfigSmooth() const
+{
+	return p->config.smoothScaling;
+}
+
+void SharedState::overrideConfigVsync(bool val)
+{
+	p->config.vsync = val;
+}
+
+bool SharedState::getConfigVsync() const
+{
+	return p->config.vsync;
+}
+
 SharedState::SharedState(RGSSThreadData *threadData)
 {
 	p = new SharedStatePrivate(threadData);

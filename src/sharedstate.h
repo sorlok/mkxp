@@ -90,6 +90,12 @@ struct SharedState
 
 	unsigned int genTimeStamp();
 
+	// Force-override a config option for this runtime.
+	void overrideConfigSmooth(bool val);
+	bool getConfigSmooth() const;
+	void overrideConfigVsync(bool val);
+	bool getConfigVsync() const;
+
 	/* Returns global quad IBO, and ensures it has indices
 	 * for at least minSize quads */
 	void ensureQuadIBO(size_t minSize);

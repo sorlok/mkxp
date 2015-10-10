@@ -272,6 +272,52 @@ RB_METHOD(steamAchieveSync)
 	return Qnil;
 }
 
+RB_METHOD(configOverSetVsync)
+{
+	RB_UNUSED_PARAM;
+
+	bool setOn;
+	rb_get_args(argc, argv, "b", &setOn RB_ARG_END); \
+
+	GUARD_EXC( shState->overrideConfigVsync(setOn); )
+
+	return Qnil;
+}
+
+RB_METHOD(configOverGetVsync)
+{
+	RB_UNUSED_PARAM;
+
+	bool res = false;
+	GUARD_EXC( res=shState->getConfigVsync(); )
+
+	return rb_int_new(res);
+}
+
+RB_METHOD(configOverSetSmooth)
+{
+	RB_UNUSED_PARAM;
+
+	bool setOn;
+	rb_get_args(argc, argv, "b", &setOn RB_ARG_END); \
+
+	GUARD_EXC( shState->overrideConfigSmooth(setOn); )
+
+	return Qnil;
+}
+
+RB_METHOD(configOverGetSmooth)
+{
+	RB_UNUSED_PARAM;
+
+	bool res = false;
+	GUARD_EXC( res=shState->getConfigSmooth(); )
+
+	return rb_int_new(res);
+}
+
+
+
 
 void
 fileIntBindingInit()
@@ -288,6 +334,15 @@ fileIntBindingInit()
 	VALUE module = rb_define_module("SteamAchievements");
 	_rb_define_module_function(module, "init_names", steamAchieveInit);
 	_rb_define_module_function(module, "sync_all", steamAchieveSync);
+	}
+
+	//Special module: ConfigOverride
+	{
+	VALUE module = rb_define_module("ConfigOverride");
+	_rb_define_module_function(module, "set_vsync", configOverSetVsync);
+	_rb_define_module_function(module, "get_vsync", configOverGetVsync);
+	_rb_define_module_function(module, "set_smooth", configOverSetSmooth);
+	_rb_define_module_function(module, "get_smooth", configOverGetSmooth);
 	}
 
 
