@@ -2,7 +2,7 @@
 
 #Variable!
 APPNAME="LastDream.app"
-ORIGRES="../LastDream_mkxp"
+ORIGRES="../LastDream1"
 BNDLFLDR="./bundle"  #Where we put the final app
 
 APPBINARY="$APPNAME/Contents/MacOS/mkxp"
