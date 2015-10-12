@@ -21,6 +21,8 @@
 
 #include "graphics.h"
 
+#include <iostream>
+
 #include "util.h"
 #include "gl-util.h"
 #include "sharedstate.h"
@@ -827,6 +829,7 @@ void Graphics::frameReset()
 
 void Graphics::centerResizeRaise(int w, int h)
 {
+	std::cout <<"MKXP: Center/resize/raise: " <<w <<"," <<h <<"\n";
 	p->threadData->ethread->requestWindowResize(w, h);
 	p->threadData->ethread->requestWindowCenterRaise();
 }
@@ -1012,6 +1015,7 @@ bool Graphics::getFullscreen() const
 
 void Graphics::setFullscreen(bool value)
 {
+	std::cout <<"MKXP: Setting to fullscreen: " <<value <<"\n";
 	p->threadData->ethread->requestFullscreenMode(value);
 	p->threadData->ethread->requestWindowCenterRaise();
 }

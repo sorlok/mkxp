@@ -25,7 +25,9 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 
+#include <SDL.h>
 #include <SDL_filesystem.h>
+#include <iostream>
 
 #include <fstream>
 #include <stdint.h>
@@ -33,6 +35,7 @@
 #include "debugwriter.h"
 #include "util.h"
 #include "sdl-util.h"
+#include "filesystem.h"
 
 #ifdef INI_ENCODING
 extern "C" {
@@ -397,4 +400,44 @@ void Config::readGameINI()
 	}
 
 	setupScreenSize(*this);
+
+
+	//Modify the game's screen size based on additional options in our Game.ini
+	const std::string section = "Fullscreen++";
+	const std::string filename = "./Game.ini";
+	std::string isFullscreen = GetPPString(section, "Fullscreen", "1", filename);
+	std::string fsRatio = GetPPString(section, "FullscreenRatio", "1", filename);
+	std::string wnRatio = GetPPString(section, "WindowedRatio", "1", filename);
+
+	//Change our fullscreen flag.
+	this->fullscreen = isFullscreen=="1";
+
+	//Chance the scale appropriately.
+	int scaleVal = atoi(this->fullscreen?fsRatio.c_str():wnRatio.c_str());
+	if (scaleVal<0) {
+		//Failsafe
+		scaleVal = 0;
+	}
+
+	//Special case: "0" means "scale to display size"
+	if (scaleVal==0) {
+		//Cheating a bit...
+		SDL_DisplayMode mode;
+		SDL_GetDisplayMode(0, 0, &mode);
+
+		//Scale it in the right direction.
+		if (mode.w*this->defScreenH/this->defScreenW > mode.h) {
+			this->defScreenW = mode.h*this->defScreenW/this->defScreenH;
+			this->defScreenH = mode.h;
+		} else {
+			this->defScreenW = mode.w;
+			this->defScreenH = mode.w*this->defScreenH/this->defScreenW;
+		}
+	} else {
+		this->defScreenW *= scaleVal;
+		this->defScreenH *= scaleVal;
+	}
+
+	//Log
+	std::cout <<"Overriding Graphics settings; fullscreen: " <<(this->fullscreen?"true":"false") <<"; fsRatio: " <<fsRatio <<"; wnRatio: " <<wnRatio <<"; applied ratio: " <<scaleVal <<"\n";
 }
