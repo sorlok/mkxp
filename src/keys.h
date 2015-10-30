@@ -25,7 +25,6 @@
 
 #include <iostream>
 #include <SDL_keyboard.h>
-#include <SDL_gamecontroller.h>
 #include "util.h"
 
 #include "eventthread.h"
@@ -42,74 +41,142 @@ struct AtomicFlag;
 class WolfPad
 {
 private:
-	//How long each button has been held down.
-	uint8_t holds[SDL_CONTROLLER_BUTTON_MAX] = {0};
-	uint8_t holdsTrig[2] = {0}; //Trigger holds (L,R)
+	//Hard-coded into keys-binding.cpp; don't change this without also changing that!
+	const static int MaxButtons = 16;
 
-	bool validate(int button) {
-		//Basically, "will it crash anything"? If they want to check bogus keycodes, then by all means!
-		return button>=0 && button<SDL_CONTROLLER_BUTTON_MAX; 
-	}
+	//How long each button has been held down.
+	//Note that button ids go from [0...16] for buttons, [16...32] for axis, and [32...48] for hats
+	uint8_t button_holds[MaxButtons] = {0};
+	uint8_t axis_holds[MaxButtons] = {0};   //0,1,2,3 = [L,R,U,D]; the rest are unused (maybe L2/R2 use these?)
+	uint8_t hat_holds[MaxButtons] = {0};   //This is actually MaxButtons/4, for [U,L,R,D]
+
 
 public:
+	bool isPluggedIn() {
+		return EventThread::js != NULL;
+	}
+
 	void update() {
-		//Increment holds, cap to prevent overflow.
-		for (size_t i=0; i<SDL_CONTROLLER_BUTTON_MAX; i++) {
-			if (EventThread::padStates[i]) {
-				holds[i] += 1;
+		//Increment button holds, cap to prevent overflow.
+		for (size_t i=0; i<MaxButtons; i++) {
+			if (EventThread::joyState.buttons[i]) {
+				button_holds[i] += 1;
 			} else {
-				holds[i] = 0;
+				button_holds[i] = 0;
 			}
-			if (holds[i]>49) {
-				holds[i] -= 10;
+			if (button_holds[i]>49) {
+				button_holds[i] -= 10;
 			}
 		}
 
-		//Increment trigger holds, cap to prevent overflow.
-		if (EventThread::padAxes[SDL_CONTROLLER_AXIS_TRIGGERLEFT] > 0) {  // >50%
-			holdsTrig[0] += 1;
+		//Increment axis holds.
+		for (size_t i=0; i<4; i+=2) {
+			int value = EventThread::joyState.axes[i/2];
+			if (i==0) { //Left/Right
+				if (value<-JAXIS_THRESHOLD) {
+					axis_holds[i+0] += 1;
+				} else {
+					axis_holds[i+0] = 0;
+				}
+				if (value>JAXIS_THRESHOLD) {
+					axis_holds[i+1] += 1;
+				} else {
+					axis_holds[i+1] = 0;
+				}
+			} else if (i==2) { //Up/Down
+				if (value<-JAXIS_THRESHOLD) {
+					axis_holds[i+0] += 1;
+				} else {
+					axis_holds[i+0] = 0;
+				}
+				if (value>JAXIS_THRESHOLD) {
+					axis_holds[i+1] += 1;
+				} else {
+					axis_holds[i+1] = 0;
+				}
+			}
+
+			for (size_t j=0; j<2; j++) {
+				if (axis_holds[i+j]>49) {
+					axis_holds[i+j] -= 10;
+				}
+			}
 		}
-		if (EventThread::padAxes[SDL_CONTROLLER_AXIS_TRIGGERRIGHT] > 0) { // >50%
-			holdsTrig[1] += 1;
+
+		//Hat holds are a huge pain.
+		for (size_t i=0; i<MaxButtons; i+=4) { //0,1,2,3 = [U,L,R,D]
+			//Convert it to something reasonable.
+			uint8_t code = EventThread::joyState.hats[i/4];
+			if (code&SDL_HAT_UP) {
+				hat_holds[i+0] += 1;
+			} else {
+				hat_holds[i+0] = 0;
+			}
+			if (code&SDL_HAT_LEFT) {
+				hat_holds[i+1] += 1;
+			} else {
+				hat_holds[i+1] = 0;
+			}
+			if (code&SDL_HAT_RIGHT) {
+				hat_holds[i+2] += 1;
+			} else {
+				hat_holds[i+2] = 0;
+			}
+			if (code&SDL_HAT_DOWN) {
+				hat_holds[i+3] += 1;
+			} else {
+				hat_holds[i+3] = 0;
+			}
+			for (size_t j=0; j<4; j++) {
+				if (hat_holds[i+j]>49) {
+					hat_holds[i+j] -= 10;
+				}
+			}
 		}
-		if (holdsTrig[0]>49) { holds[0] -= 10; }
-		if (holdsTrig[1]>49) { holds[1] -= 10; }
 	}
 
 	//State check functions
 	bool isPress(int button) {
-		//Cheaty, cheaty.
-		if (button == static_cast<int>(SDL_CONTROLLER_BUTTON_MAX)+1) { return holdsTrig[0]>0; } //L2
-		if (button == static_cast<int>(SDL_CONTROLLER_BUTTON_MAX)+2) { return holdsTrig[1]>0; } //R2
+		//Count up
+		uint8_t value = 0;
+		if (button>=0 && button<16) {
+			value = button_holds[button];
+		} else if (button>=16 && button<32) {
+			value = axis_holds[button-16];
+		} else if (button>=32 && button<48) {
+			value = hat_holds[button-32];
+		}
 
 		//Normal
-		return validate(button) && holds[button]>0;
+		return value>0;
 	}
 	bool isTrigger(int button) {
-		//Cheaty, cheaty.
-		if (button == static_cast<int>(SDL_CONTROLLER_BUTTON_MAX)+1) { return holdsTrig[0]==1; } //L2
-		if (button == static_cast<int>(SDL_CONTROLLER_BUTTON_MAX)+2) { return holdsTrig[1]==1; } //R2
+		//Count up
+		uint8_t value = 0;
+		if (button>=0 && button<16) {
+			value = button_holds[button];
+		} else if (button>=16 && button<32) {
+			value = axis_holds[button-16];
+		} else if (button>=32 && button<48) {
+			value = hat_holds[button-32];
+		}
 
 		//Normal
-		return validate(button) && holds[button]==1;
+		return value==1;
 	}
 	bool isRepeat(int button) {
-		//Cheaty, cheaty.
-		if (button == static_cast<int>(SDL_CONTROLLER_BUTTON_MAX)+1) { //L2
-			int result = holdsTrig[0];
-			return (result==1) || (result>30 && (result%5)==0);
-		}
-		if (button == static_cast<int>(SDL_CONTROLLER_BUTTON_MAX)+2) { //R2
-			int result = holdsTrig[1];
-			return (result==1) || (result>30 && (result%5)==0);
+		//Count up
+		uint8_t value = 0;
+		if (button>=0 && button<16) {
+			value = button_holds[button];
+		} else if (button>=16 && button<32) {
+			value = axis_holds[button-16];
+		} else if (button>=32 && button<48) {
+			value = hat_holds[button-32];
 		}
 
 		//Normal.
-		if (validate(button)) {
-			int result = holds[button];
-			return (result==1) || (result>30 && (result%5)==0);
-		}
-		return false;
+		return (value==1) || (value>30 && (value%5)==0);
 	}
 };
 
@@ -141,13 +208,6 @@ private:
 	}
 
 public:
-	/*void moduleInit() {
-		memcpy(lastKeyStates, EventThread::keyStates, sizeof(lastKeyStates)*sizeof(uint8_t)); //TODO: Zeroing may be better...
-		for (size_t i=0; i<SDL_NUM_SCANCODES; i++) { //We could technically memset this...
-			states[i] = KeyState();
-		}
-	}*/
-
 	//Key lookup
 	const char* getKeyname(int key) {
 		if (!validate(key)) { return ""; }

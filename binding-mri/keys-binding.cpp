@@ -122,6 +122,16 @@ RB_METHOD(wolfpadUpdate)
 	return Qnil;
 }
 
+RB_METHOD(wolfpadPluggedIn)
+{
+	RB_UNUSED_PARAM;
+
+	bool res = false;
+	GUARD_EXC( res = shState->wolfpad().isPluggedIn(); )
+
+	return rb_bool_new(res);
+}
+
 RB_METHOD(wolfpadPress)
 {
 	RB_UNUSED_PARAM;
@@ -176,25 +186,45 @@ void keysBindingInit()
 	_rb_define_module_function(module, "press?", wolfpadPress);
 	_rb_define_module_function(module, "trigger?", wolfpadTrigger);
 	_rb_define_module_function(module, "repeat?", wolfpadRepeat);
+	_rb_define_module_function(module, "plugged_in?", wolfpadPluggedIn);
 
-	rb_const_set(module, rb_intern("UP"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_DPAD_UP)));
-	rb_const_set(module, rb_intern("LEFT"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_DPAD_LEFT)));
-	rb_const_set(module, rb_intern("DOWN"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_DPAD_DOWN)));
-	rb_const_set(module, rb_intern("RIGHT"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_DPAD_RIGHT)));
-	rb_const_set(module, rb_intern("A"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_A)));
-	rb_const_set(module, rb_intern("B"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_B)));
-	rb_const_set(module, rb_intern("X"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_X)));
-	rb_const_set(module, rb_intern("Y"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_Y)));
-	rb_const_set(module, rb_intern("L1"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_LEFTSHOULDER)));
-	rb_const_set(module, rb_intern("R1"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)));
-	rb_const_set(module, rb_intern("START"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_START)));
-	rb_const_set(module, rb_intern("SELECT"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_BACK)));
-	rb_const_set(module, rb_intern("L3"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_LEFTSTICK)));
-	rb_const_set(module, rb_intern("R3"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_RIGHTSTICK)));
-
-	//We cheat a bit to make these:
-	rb_const_set(module, rb_intern("L2"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_MAX)+1));
-	rb_const_set(module, rb_intern("R2"), rb_int_new(static_cast<int>(SDL_CONTROLLER_BUTTON_MAX)+2));
+	//This is all heavily hard-coded, based on WolfPad::MaxButtons
+	rb_const_set(module, rb_intern("Btn0"), rb_int_new(0));
+	rb_const_set(module, rb_intern("Btn1"), rb_int_new(1));
+	rb_const_set(module, rb_intern("Btn2"), rb_int_new(2));
+	rb_const_set(module, rb_intern("Btn3"), rb_int_new(3));
+	rb_const_set(module, rb_intern("Btn4"), rb_int_new(4));
+	rb_const_set(module, rb_intern("Btn5"), rb_int_new(5));
+	rb_const_set(module, rb_intern("Btn6"), rb_int_new(6));
+	rb_const_set(module, rb_intern("Btn7"), rb_int_new(7));
+	rb_const_set(module, rb_intern("Btn8"), rb_int_new(8));
+	rb_const_set(module, rb_intern("Btn9"), rb_int_new(9));
+	rb_const_set(module, rb_intern("Btn10"), rb_int_new(10));
+	rb_const_set(module, rb_intern("Btn11"), rb_int_new(11));
+	rb_const_set(module, rb_intern("Btn12"), rb_int_new(12));
+	rb_const_set(module, rb_intern("Btn13"), rb_int_new(13));
+	rb_const_set(module, rb_intern("Btn14"), rb_int_new(14));
+	rb_const_set(module, rb_intern("Btn15"), rb_int_new(15));
+	rb_const_set(module, rb_intern("Axis1L"), rb_int_new(16));
+	rb_const_set(module, rb_intern("Axis1R"), rb_int_new(17));
+	rb_const_set(module, rb_intern("Axis1U"), rb_int_new(18));
+	rb_const_set(module, rb_intern("Axis1D"), rb_int_new(19));
+	rb_const_set(module, rb_intern("Hat1U"), rb_int_new(32));
+	rb_const_set(module, rb_intern("Hat1L"), rb_int_new(33));
+	rb_const_set(module, rb_intern("Hat1R"), rb_int_new(34));
+	rb_const_set(module, rb_intern("Hat1D"), rb_int_new(35));
+	rb_const_set(module, rb_intern("Hat2U"), rb_int_new(36));
+	rb_const_set(module, rb_intern("Hat2L"), rb_int_new(37));
+	rb_const_set(module, rb_intern("Hat2R"), rb_int_new(38));
+	rb_const_set(module, rb_intern("Hat2D"), rb_int_new(39));
+	rb_const_set(module, rb_intern("Hat3U"), rb_int_new(40));
+	rb_const_set(module, rb_intern("Hat3L"), rb_int_new(41));
+	rb_const_set(module, rb_intern("Hat3R"), rb_int_new(42));
+	rb_const_set(module, rb_intern("Hat3D"), rb_int_new(43));
+	rb_const_set(module, rb_intern("Hat4U"), rb_int_new(44));
+	rb_const_set(module, rb_intern("Hat4L"), rb_int_new(45));
+	rb_const_set(module, rb_intern("Hat4R"), rb_int_new(46));
+	rb_const_set(module, rb_intern("Hat4D"), rb_int_new(47));
 	}
 
 	VALUE module = rb_define_module("Keys");

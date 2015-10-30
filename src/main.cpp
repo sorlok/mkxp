@@ -195,28 +195,11 @@ int main(int argc, char *argv[])
 	SDL_SetHint(SDL_HINT_ACCELEROMETER_AS_JOYSTICK, "0");
 
 	/* initialize SDL first */
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER) < 0)
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) < 0)
 	{
 		showInitError(std::string("Error initializing SDL: ") + SDL_GetError());
 		return 0;
 	}
-
-//TODO: This works for a plugged-in controller. Will have to test with hot-plugging, etc.
-SDL_GameController* controller = NULL;
-for (int i=0; i<SDL_NumJoysticks(); i++) {
-  if (SDL_IsGameController(i)) {
-    controller = SDL_GameControllerOpen(i);
-    if (controller) {
-      break;
-    } else {
-      std::cout <<"Could not open gamecontroller " <<i <<": " <<SDL_GetError() <<"\n";
-    }
-  }
-}
-if (controller) {
-  std::cout <<"Found and opened gamecontroller\n";
-}
-//END TODO
 
 	//Steam!
 	SteamInit steamStuff;

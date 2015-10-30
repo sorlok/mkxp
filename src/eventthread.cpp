@@ -38,6 +38,7 @@
 #include "al-util.h"
 #include "debugwriter.h"
 
+#include <iostream>
 #include <string.h>
 
 typedef void (ALC_APIENTRY *LPALCDEVICEPAUSESOFT) (ALCdevice *device);
@@ -70,11 +71,10 @@ initALCFunctions(ALCdevice *alcDev)
 #define HAVE_ALC_DEVICE_PAUSE alc.DevicePause
 
 uint8_t EventThread::keyStates[];
-uint8_t EventThread::padStates[];
-int16_t EventThread::padAxes[];
 EventThread::JoyState EventThread::joyState;
 EventThread::MouseState EventThread::mouseState;
 EventThread::TouchState EventThread::touchState;
+SDL_Joystick* EventThread::js = NULL;
 
 /* User event codes */
 enum
@@ -134,7 +134,7 @@ void EventThread::process(RGSSThreadData &rtData)
 
 	bool terminate = false;
 
-	SDL_Joystick *js = 0;
+	js = NULL;
 	if (SDL_NumJoysticks() > 0)
 		js = SDL_JoystickOpen(0);
 
@@ -333,17 +333,6 @@ void EventThread::process(RGSSThreadData &rtData)
 			keyStates[event.key.keysym.scancode] = false;
 			break;
 
-		case SDL_CONTROLLERBUTTONDOWN :
-			padStates[event.cbutton.button] = true;
-			break;
-		case SDL_CONTROLLERBUTTONUP :
-			padStates[event.cbutton.button] = false;
-			break;
-
-		case SDL_CONTROLLERAXISMOTION:
-			padAxes[event.caxis.axis] = event.caxis.value;
-			break;
-
 		case SDL_JOYBUTTONDOWN :
 			joyState.buttons[event.jbutton.button] = true;
 			break;
@@ -365,9 +354,12 @@ void EventThread::process(RGSSThreadData &rtData)
 				break;
 
 			js = SDL_JoystickOpen(0);
+			std::cout <<"Joystick added: " <<js <<"\n";
 			break;
 
 		case SDL_JOYDEVICEREMOVED :
+			js = NULL;
+			std::cout <<"Joystick removed\n";
 			resetInputStates();
 			break;
 
