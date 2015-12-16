@@ -32,10 +32,6 @@ class SharedFontState;
 std::string GetPPString(std::string section, std::string key, std::string defValue, std::string filePath);
 void WritePPString(std::string section, std::string key, std::string value, std::string filePath);
 
-//Helper functions for Steam
-void SteamInitAchievementNames(std::string achieveNames, int numAchieves);
-void SteamSyncAchievements(std::string achieveStr);
-
 class FileSystem
 {
 public:

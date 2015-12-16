@@ -25,6 +25,16 @@
 #include "filesystem.h"
 #include "util.h"
 
+//NOTE: These are needed because we put implementation details for Steam in here.
+//      We might consider eventually moving them.
+#include <iostream>
+#include <fstream>
+#include <map>
+#include <vector>
+#include <string>
+#include <sstream>
+
+#include "steam_api.h"
 #include "ruby/encoding.h"
 #include "ruby/intern.h"
 
@@ -241,36 +251,450 @@ RB_METHOD(ppWriteString)
 	return Qnil;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////
+// BEGIN STEAM
+///////////////////////////////////////////////////////////////////////////////////////
 
-RB_METHOD(steamAchieveInit)
-{
-	RB_UNUSED_PARAM;
+//This class holds everything about Steam, and is used as a broker with the Steam API from within RGSS.
+class MySteamSuperClass {
+public:
+	MySteamSuperClass() : waitingOnSteam(false), error(false) {
+	}
 
-	//This contains every steam achievement name, separated by a ":"
-	const char* achieveStr = "";
-	int numAchievements = 0;
+	//Initialize.
+	int init() {
+		//Try to open our logfile.
+		if (!log_file.is_open()) {
+			log_file.open("steam_mkxp_log.txt");
+		}
 
-	rb_get_args(argc, argv, "zi|", &achieveStr, &numAchievements RB_ARG_END);
+		//Try to initialize steam.
+		if (SteamAPI_Init()) {
+			get_logfile() << "Steam API initialized." << std::endl;
+		} else {
+			get_logfile() << "Steam API failed to initialize for some reason..." << std::endl;
+			error = true;
+			return 1;
+		}
 
-	GUARD_EXC( SteamInitAchievementNames(achieveStr, numAchievements); )
+		//Try to over-ride the screenshot key.
+		ISteamScreenshots* ss = SteamScreenshots();
+		if (ss) { ss->HookScreenshots(true); }
 
-	return Qnil;
+		return 0;
+	}
+
+	int shutdown() {
+		//Cancel callbacks.
+		steamLeaderboardCallback.Cancel();
+		steamLeaderboardCallback2.Cancel();
+
+		//Now, shut down steam.
+		SteamAPI_Shutdown();
+		get_logfile() << "Steam API shut down." << std::endl;
+
+		//Now, reset all our internal state.
+		log_file.close();
+		leaderboards.clear();
+		leaderToSync.clear();
+		leaderSyncingName = "";
+		waitingOnSteam = false;
+		error = false;
+
+		return 0;
+	}
+
+
+	//Get our output stream (file).
+	std::ostream& get_logfile() const {
+		if (log_file.is_open()) {
+			return log_file;
+		}
+		return std::cout; //Umm... better than crashing?
+	}
+
+	//Find and start our next request. Returns:
+	//  0 == no error, still busy (or still requests to start).
+	//  1 == ERROR, requests will no longer go through.
+	//  2 == done. No need to call this function until an external input (leaderboard sync request) occurs.
+	int doNextRequest() {
+		//Errors override all.
+		if (error) {
+			return 1;
+		}
+
+		//Always get the latest state from Steam.
+		SteamAPI_RunCallbacks();
+
+		//Still waiting for the next request?
+		if (waitingOnSteam) {
+			return 0;
+		}
+
+		//Is there a new request to do?
+		for (std::map<std::string, SteamLeaderboard_t>::const_iterator it = leaderboards.begin(); it != leaderboards.end(); it++) {
+			if (it->second == 0) {
+				//Fire off an async "find" request.
+				get_logfile() << "Next leaderboard to find is: \"" << it->first << "\"" << std::endl;
+				SteamAPICall_t apiHdl = SteamUserStats()->FindLeaderboard(it->first.c_str());
+				if (apiHdl == 0) {
+					get_logfile() << "ERROR calling SteamUserStats()->FindLeaderboard() on leaderboard \"" << it->first << "\"" << std::endl;
+					return 1;
+				}
+
+				//Set a handler for it.
+				steamLeaderboardCallback.Set(apiHdl, this, &MySteamSuperClass::OnFindLeaderboard);
+
+				//Done for now.
+				waitingOnSteam = true;
+				return 0;
+			}
+		}
+
+		//Do we have any outstanding requests to sync a leaderboard value?
+		std::map<std::string, int32>::const_iterator toSync = leaderToSync.begin();
+		if (toSync != leaderToSync.end()) {
+			//Remove it; save it as the one we're looking for.
+			leaderSyncingName = toSync->first;
+			int32 leaderSyncingValue = toSync->second;
+			leaderToSync.erase(toSync);
+
+			//Make sure it has a handle.
+			std::map<std::string, SteamLeaderboard_t>::const_iterator leadHdl = leaderboards.find(leaderSyncingName);
+			if (leadHdl == leaderboards.end() || leadHdl->second==0) {
+				get_logfile() << "ERROR, leaderboard should always be found first: \"" << leaderSyncingName << "\"" << std::endl;
+				return 1;
+			}
+
+			//Fire off an async "sync" request.
+			SteamAPICall_t apiHdl = SteamUserStats()->UploadLeaderboardScore(leadHdl->second, k_ELeaderboardUploadScoreMethodKeepBest, leaderSyncingValue, NULL, 0);
+			if (apiHdl == 0) {
+				get_logfile() << "ERROR calling SteamUserStats()->UploadLeaderboardScore() on leaderboard \"" << leadHdl->first << "\"" << std::endl;
+				return 1;
+			}
+
+			//Set a handler for it.
+			steamLeaderboardCallback2.Set(apiHdl, this, &MySteamSuperClass::OnSyncLeaderboard);
+
+			//Done for now.
+			waitingOnSteam = true;
+			return 0;
+		}
+
+		//Done
+		return 2;
+	}
+
+
+	//Just add a leaderboard to the list of ones to find.
+	void findLeaderboard(std::string leaderboardName) {
+		//Ignore empty leaderboard strings.
+		if (leaderboardName.empty()) {
+			return;
+		}
+
+		//Add it to the list of handles to find (if we don't know about it).
+		addNewLeaderboardHandle(leaderboardName);
+	}
+
+
+	//File a new request to sync the leaderboard. You'll have to call doNextRequest() for this to actually be sent out.
+	void syncLeaderboard(std::string leaderboardName, int32 leaderboardValue) {
+		//Ignore empty leaderboard strings.
+		if (leaderboardName.empty()) {
+			return;
+		}
+
+		//Add it as a candidate.
+		leaderToSync[leaderboardName] = leaderboardValue;
+
+		//Add it to the list of handles to find (if we don't know about it).
+		addNewLeaderboardHandle(leaderboardName);
+	}
+
+
+	//Achievements are far simpler. Returns 0 for ok, 1 for error.
+	int syncAchievement(std::string achievementName) {
+		//Can't do achievements if steam is not loaded.
+		ISteamUser* user = SteamUser();
+		ISteamUserStats* userStats = SteamUserStats();
+		ISteamFriends* userFriends = SteamFriends();
+		if (!(user && userStats)) {
+			get_logfile() << "Can't get Steam achievements; user or user_stats is null." << std::endl;
+			return 1;
+		}
+		get_logfile() << "Requesting stats for Steam player: " << std::string(userFriends ? userFriends->GetPersonaName() : "<unknown>") << std::endl;
+		if (!userStats->RequestCurrentStats()) {
+			get_logfile() << "Can't get Steam achievements; unknown error." << std::endl;
+			return 1;
+		}
+
+		//Print the current achievements
+		get_logfile() << "Steam server lists " << userStats->GetNumAchievements() << " total achievements." << std::endl;
+
+		//The only thing we refuse to sync is an empty string. Go wild with crazy SQL-injection achievements!
+		if (!achievementName.empty()) {
+			bool status = false;
+			if (!userStats->GetAchievement(achievementName.c_str(), &status)) {
+				get_logfile() << "Can't get Steam achievement \"" << achievementName << "; unknown error." << std::endl;
+				return 1;
+			}
+
+			//Only update achievements steam doesn't know we've earned yet.
+			if (!status) {
+				get_logfile() << "Registering achievement: " << achievementName << std::endl;
+				userStats->SetAchievement(achievementName.c_str());
+			}
+		}
+
+		//Update the server.
+		userStats->StoreStats();
+
+		return 0;
+	}
+
+
+	//Are there any known errors?
+	// 0 = ok and waiting
+	// 1 = error
+	// 2 = ok and done
+	int getError() const {
+		if (error) {
+			return 1;
+		}
+		if (waitingOnSteam) {
+			return 0;
+		}
+		return 2;
+	}
+
+
+
+	//CALLBACK: Leaderboard found.
+	void OnFindLeaderboard(LeaderboardFindResult_t* pResult, bool bIOFailure) {
+		const char* leaderName = getLeaderboardName(pResult->m_hSteamLeaderboard, pResult->m_bLeaderboardFound>0, bIOFailure);
+		if (leaderName == NULL) {
+			error = true;
+			return;
+		}
+
+		//Are we clobbering another leaderboard?
+		if (leaderboards[leaderName] != 0) {
+			get_logfile() << "ERROR: Leaderboard callback referenced an already-defined leaderboard \"" << leaderName << "\"." << std::endl;
+			error = true;
+			return;
+		}
+
+		//Ok, save it.
+		leaderboards[leaderName] = pResult->m_hSteamLeaderboard;
+		get_logfile() << "Leaderboard found \"" << leaderName << "\"" << std::endl;
+		waitingOnSteam = false;
+	}
+
+	//CALLBACK: Leaderboard synced.
+	void OnSyncLeaderboard(LeaderboardScoreUploaded_t* pResult, bool bIOFailure) {
+		const char* leaderName = getLeaderboardName(pResult->m_hSteamLeaderboard, pResult->m_bSuccess, bIOFailure);
+		if (leaderName == NULL) {
+			error = true;
+			return;
+		}
+
+		//Are we clobbering another leaderboard?
+		if (leaderSyncingName != leaderName) {
+			get_logfile() << "ERROR: Leaderboard callback referenced a not-requested-to-sync leaderboard \"" << leaderName << "\"." << std::endl;
+			error = true;
+			return;
+		}
+
+		//Done, stop waiting.
+		leaderSyncingName = "";
+		get_logfile() << "Leaderboard synced \"" << leaderName << "\"" << std::endl;
+		waitingOnSteam = false;
+	}
+
+
+protected:
+	//HELPER: Perform some checks and get the name of the given leaderboard from the various result values.
+	const char* getLeaderboardName(SteamLeaderboard_t& leaderBoard, bool pSuccess, bool bIOFailure) const {
+		//Was there a generic I/O error?
+		if (bIOFailure) {
+			get_logfile() << "ERROR: Leaderboard callback returned an I/O error." << std::endl;
+			return NULL;
+		}
+
+		//Was the leaderboard found?
+		if (!pSuccess) {
+			get_logfile() << "ERROR: Leaderboard callback did not find the requested leaderboard." << std::endl;
+			return NULL;
+		}
+
+		//So far so good. Extract its name.
+		const char* leaderName = SteamUserStats()->GetLeaderboardName(leaderBoard);
+
+		//Are we referencing a non-existent leaderboard?
+		if (leaderboards.find(leaderName) == leaderboards.end()) {
+			get_logfile() << "ERROR: Leaderboard callback referenced unknown leaderboard \"" << leaderName << "\"." << std::endl;
+			return NULL;
+		}
+
+		//Good.
+		return leaderName;
+	}
+
+	//HELPER: Add empty handles for new leaderboards, skipping those we already know the handle for
+	void addNewLeaderboardHandles(const std::vector<std::string>& leaderboardNames) {
+		for (std::vector<std::string>::const_iterator it = leaderboardNames.begin(); it != leaderboardNames.end(); it++) {
+			addNewLeaderboardHandle(*it);
+		}
+	}
+	void addNewLeaderboardHandle(const std::string& leaderboardName) {
+		if (leaderboards.find(leaderboardName) == leaderboards.end()) {
+			get_logfile() << "New leaderboard requested by name: \"" << leaderboardName << "\"" << std::endl;
+			leaderboards[leaderboardName] = 0;
+		}
+	}
+
+
+private:
+	//Logfile for all actions. Created on startup.
+	mutable std::ofstream log_file;
+
+	//Map of known leaderboard handles. Can be added to/removed from as needed.
+	std::map<std::string, SteamLeaderboard_t> leaderboards;
+
+	//Map of leaderboard=>value items that we want to sync.
+	std::map<std::string, int32> leaderToSync;
+
+	//The name of the leaderboard we are currently waiting on a sync from. 
+	//(Used for confirmation only).
+	std::string leaderSyncingName;
+
+	//Are we currently waiting for a response from Steam for anything?
+	bool waitingOnSteam;
+
+	//Are we currently in error? (If so, we will always be in error.)
+	//Errors relate to leaderboards, or steam not having loaded at all. An error should not strictly cause achievements to fail, but will cause the leaderboard code to not even continue trying.
+	//TODO: Need to see how robust this is in the face of Steam disconnects.
+	bool error;
+
+	//Callback for our two functions. We could (probably) map multiple, but let's keep it simple.
+	CCallResult<MySteamSuperClass, LeaderboardFindResult_t> steamLeaderboardCallback;
+	CCallResult<MySteamSuperClass, LeaderboardScoreUploaded_t> steamLeaderboardCallback2;
+	
+
+};
+
+
+
+//Get our Steam singleton instance.
+MySteamSuperClass& get_steam() {
+	static MySteamSuperClass my_steam_super;
+	return my_steam_super;
 }
 
 
-RB_METHOD(steamAchieveSync)
+/////////////////////
+// NOTE: Usage instructions are out of date. 
+////////////////////
+
+//To use this, first save the function pointer:
+//  fnSteamSync =  Win32API.new("SteamConsole.dll", "sync_steam", "pi", "i")
+//Then, build an array of strings containing all the achievements for which the switch is ON:
+//  achieveStr = ["SomeAch","AnotherAch"]
+//Then, call it:
+//  fnSteamSync.call(achieveStr.join(":"), achieveStr.length)
+//Output of the LAST call to this function is stored in steam_log.txt.
+//You might want to wrap this in a rescue stanza to avoid crashing the program in case of weird errors.
+
+RB_METHOD(steamInit)
 {
-	RB_UNUSED_PARAM;
+	int res = 1;
 
-        //This contains a 1/0 for every achievement, in order. (1==got it)
-	const char* achieveStr = "";
+	GUARD_EXC( res = get_steam().init(); )
 
-	rb_get_args(argc, argv, "z|", &achieveStr RB_ARG_END);
-
-	GUARD_EXC( SteamSyncAchievements(achieveStr); )
-
-	return Qnil;
+	return rb_int_new(res);
 }
+
+RB_METHOD(steamShutdown)
+{
+	int res = 1;
+
+	GUARD_EXC( res = get_steam().shutdown(); )
+
+	return rb_int_new(res);
+}
+
+RB_METHOD(steamSpecialCode)
+{
+	int res = 1;
+
+	GUARD_EXC( res = get_steam().getError(); )
+
+	return rb_int_new(res);
+}
+
+RB_METHOD(steamTick)
+{
+	int res = 1;
+
+	GUARD_EXC( res = get_steam().doNextRequest(); )
+
+	return rb_int_new(res);
+}
+
+RB_METHOD(steamFindLeaderboard)
+{
+	int res = 0;
+
+	const char* leaderboardName = "";
+
+	rb_get_args(argc, argv, "z|", &leaderboardName RB_ARG_END);
+
+	GUARD_EXC( /*res =*/ get_steam().findLeaderboard(leaderboardName); )
+
+	return rb_int_new(res);
+}
+
+RB_METHOD(steamSyncLeaderboard)
+{
+	int res = 0;
+
+	const char* leaderboardName = "";
+	const char* leaderboardValue = "";
+
+	rb_get_args(argc, argv, "zz|", &leaderboardName, &leaderboardValue RB_ARG_END);
+
+	int32 leadVal32 = 0;
+	std::stringstream ss(leaderboardValue);
+	ss >> leadVal32;
+	if (ss.fail()) {
+		get_steam().get_logfile() << "ERROR, leaderboard couldn't parse value as int: \"" << leaderboardValue << " \"" << std::endl;
+		res = 1;
+	} else {
+		GUARD_EXC( /*res =*/ get_steam().syncLeaderboard(leaderboardName, leadVal32); )
+	}
+
+	return rb_int_new(res);
+}
+
+RB_METHOD(steamSyncAchievement)
+{
+	int res = 0;
+
+	const char* achievementName = "";
+
+	rb_get_args(argc, argv, "z|", &achievementName RB_ARG_END);
+
+	GUARD_EXC( /*res =*/ get_steam().syncAchievement(achievementName); )
+
+	return rb_int_new(res);
+}
+
+
+/////////////////////////////////////////////////////////////////////////
+// END STEAM
+/////////////////////////////////////////////////////////////////////////
+
 
 RB_METHOD(configOverSetVsync)
 {
@@ -331,9 +755,31 @@ fileIntBindingInit()
 
 	//Special module: SteamAchievements
 	{
-	VALUE module = rb_define_module("SteamAchievements");
-	_rb_define_module_function(module, "init_names", steamAchieveInit);
-	_rb_define_module_function(module, "sync_all", steamAchieveSync);
+	VALUE module = rb_define_module("SteamAPI");
+
+	//Must be called first.
+	_rb_define_module_function(module, "steam_init", steamInit);
+
+	//Unlikely you will need this, but it *does* reset the state of the system in case you want to try again.
+	_rb_define_module_function(module, "steam_shutdown", steamShutdown);
+
+	//Get a generic error code. (NOTE: for display purposes only; please use the return value of steam_tick for control).
+	_rb_define_module_function(module, "steam_special_code", steamSpecialCode);
+
+	//Call every time tick until it returns "2" (for "done") or "1" (for "error")
+	_rb_define_module_function(module, "steam_tick", steamTick);
+
+	//Optional: Call this to find a leaderboard you know you'll need later. 
+	_rb_define_module_function(module, "steam_find_leaderboard", steamFindLeaderboard);
+
+	//Call this to sync a new leaderboard. Note that you should then call steam_tick() until a 1 or 2 is returned.
+	//(You can safely call several of these in a row.)
+	_rb_define_module_function(module, "steam_sync_leaderboard", steamSyncLeaderboard);
+
+	//Call this to sync a single achievement. Note that you do NOT need to call steam_tick().
+	//Note that a return value of 1 does *not* disable everything (like leaderboards). 
+	//Note that this should still work even if leaderboards are messed up for some reason.
+	_rb_define_module_function(module, "steam_sync_achievement", steamSyncAchievement);
 	}
 
 	//Special module: ConfigOverride

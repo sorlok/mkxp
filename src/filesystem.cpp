@@ -41,9 +41,6 @@
 #include <vector>
 #include <stack>
 
-//Steam stuff
-#include "steam_api.h"
-
 #ifdef __APPLE__
 #include <iconv.h>
 #endif
@@ -161,102 +158,6 @@ void WritePPString(std::string section, std::string key, std::string value, std:
 
 	//Now, use our generic reader/writer function, converting strings as you go.
 	pp_read_write(true, section, key, value, filePath);
-}
-
-//Mapping from achievement ID to achievement name.
-namespace {
-//User apps should call SteamInitAchievementNames() to set this list.
-std::vector<std::string> achievement_names;
-
-size_t get_achievements_size() {
-  return achievement_names.size();
-}
-
-std::string get_achievement_name(unsigned int id) {
-	if (id<get_achievements_size()) {
-		return achievement_names.at(id);
-	}
-	return "";
-}
-
-} //End un-named namespace.
-
-
-
-void SteamInitAchievementNames(std::string achieveNames, int numAchieves)
-{
-    //Reset
-    achievement_names.clear();
-
-    //Split based on ":" character.
-    std::string name;
-    std::stringstream input(achieveNames);
-    while(std::getline(input, name, ':')) {
-        achievement_names.push_back(name);
-    }
-
-    //Sanity check
-    if (achievement_names.size() != numAchieves) {
-      std::cout <<"ERROR, expected " <<numAchieves <<" achievements, but found " <<achievement_names.size() <<"; resetting to 0.\n";
-      achievement_names.clear();
-    } else {
-      std::cout <<"Added " <<achievement_names.size() <<" achievement names.\n";
-    }
-}
-
-
-
-void SteamSyncAchievements(std::string achieveStr)
-{
-	//Sanity check
-	if (achieveStr.size() != get_achievements_size()) {
-		std::cout <<"Steam achievements string size mismatch (client).\n";
-		return;
-	}
-
-	//Can't do achievements if steam is not loaded.
-	ISteamUser* user = SteamUser();
-	ISteamUserStats* userStats = SteamUserStats();
-	ISteamFriends* userFriends = SteamFriends();
-	if (!(user && userStats)) {
-		std::cout <<"Can't get Steam achievements; user or user_stats is null.\n";
-		return;
-	}
-	std::cout <<"Requesting stats for Steam player: " <<std::string(userFriends?userFriends->GetPersonaName():"<unknown>") <<"\n";
-	if (!userStats->RequestCurrentStats()) {
-		std::cout <<"Can't get Steam achievements; unknown error.\n";
-		return;
-	}
-
-	//Print the current achievements; compare to what we have:
-	unsigned int nm = userStats->GetNumAchievements();
-	if (nm != get_achievements_size()) {
-		std::cout <<"Steam achievements string size mismatch (server).\n";
-		return;
-	}
-
-	//Check every one.
-	for (unsigned int i=0; i<nm; i++) {
-		std::string name = get_achievement_name(i);
-        if (name.empty()) {
-            continue;
-        }
-		bool status = false;
-		if (!userStats->GetAchievement(name.c_str(), &status)) {
-			std::cout <<"Can't get Steam achievement \"" <<name <<"\" (" <<i <<"); unknown error.\n";
-			continue;
-		}
-
-		//Only update ones that we claim to have but Steam knows nothing about.
-		bool us = (achieveStr[i]=='1');
-		if (us && !status) {
-			std::cout <<"Registering achievement: " <<name <<"\n";
-			userStats->SetAchievement(name.c_str());
-		}
-	}
-
-	//Now that we're done, store them all to the server.
-	userStats->StoreStats();
 }
 
 
