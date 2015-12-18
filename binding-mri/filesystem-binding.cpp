@@ -352,7 +352,7 @@ public:
 		}
 
 		//Do we have any outstanding requests to sync a leaderboard value?
-		std::map<std::string, int32>::const_iterator toSync = leaderToSync.begin();
+		std::map<std::string, int32>::iterator toSync = leaderToSync.begin();
 		if (toSync != leaderToSync.end()) {
 			//Remove it; save it as the one we're looking for.
 			leaderSyncingName = toSync->first;
