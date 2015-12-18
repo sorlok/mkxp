@@ -1,4 +1,8 @@
 cmake_minimum_required(VERSION 2.8.11)
+
+set(CMAKE_OSX_DEPLOYMENT_TARGET 10.7)
+
+
 Project(mkxp)
 
 ## Setup options ##
