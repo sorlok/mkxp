@@ -66,6 +66,11 @@ while [ "${#temp_lib[@]}" -gt "0" ] ; do
        ln="/opt/local/lib/$ln"
       fi
 
+       #Hack for openal
+       if [[ $ln == "libopenal"* ]]; then
+        ln="/opt/local/lib/$ln"
+       fi
+
       if containsElement "$ln" "${new_temp_lib[@]}" || containsElement "$ln" "${temp_lib[@]}" ; then
         #echo "Skipping lib: $ln (already found)"
         :
@@ -75,7 +80,8 @@ while [ "${#temp_lib[@]}" -gt "0" ] ; do
         lib_deps+=($oldLn) #"physfs" directly.
       fi
       #echo "line: $ln"
-    done < <(otool -L $lib | grep -o  -e "^\t/opt/[a-zA-Z0-9_./-]*"  -e "^\t/usr/local/[a-zA-Z0-9_./-]*"  -e "^\tlibphysfs.[0-9].dylib")
+     done < <(otool -L $lib | grep -o  -e "^\t/opt/[a-zA-Z0-9_./-]*"  -e "^\t/usr/local/[a-zA-Z0-9_./-]*"  -e "^\tlibphysfs.[0-9].dylib" -e "^\tlibopenal.[0-9].dylib")
+
   done
 
   #Swap over the new list
@@ -95,6 +101,9 @@ for lib in "${lib_deps[@]}"; do
   if [[ $lib == "libphysfs"* ]]; then
     lib="/opt/local/lib/$lib"
   fi
+   if [[ $lib == "libopenal"* ]]; then
+     lib="/opt/local/lib/$lib"
+   fi
 
   #Extract the filename
   filename="$APPNAME/Contents/Frameworks/${lib##*/}"
@@ -132,6 +141,14 @@ cp -r $ORIGRES/swapxt $APPNAME/Contents/Resources/
 cp -r $ORIGRES/*README* $APPNAME/Contents/Resources/
 cp -r $ORIGRES/ld_icon.icns $APPNAME/Contents/Resources/
 cp -r $ORIGRES/mkxp.conf $APPNAME/Contents/Resources/
+
+
+#Remove Mercurial stuff
+echo "Removing Mercurial directories..."
+rm -rf $APPNAME/Contents/Resources/Audio/.hg
+rm -rf $APPNAME/Contents/Resources/Graphics/.hg
+
+
 
 
 #LATER

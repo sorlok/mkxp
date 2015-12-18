@@ -66,16 +66,21 @@ while [ "${#temp_lib[@]}" -gt "0" ] ; do
        ln="/opt/local/lib/$ln"
       fi
 
+      #Hack for openal
+      if [[ $ln == "libopenal"* ]]; then
+       ln="/opt/local/lib/$ln"
+      fi
+
       if containsElement "$ln" "${new_temp_lib[@]}" || containsElement "$ln" "${temp_lib[@]}" ; then
         #echo "Skipping lib: $ln (already found)"
         :
       else
-        #echo "New lib: $ln"
+        #echo "New lib: $ln  from: $oldLn"
         new_temp_lib+=($ln)
         lib_deps+=($oldLn) #"physfs" directly.
       fi
       #echo "line: $ln"
-    done < <(otool -L $lib | grep -o  -e "^\t/opt/[a-zA-Z0-9_./-]*"  -e "^\t/usr/local/[a-zA-Z0-9_./-]*"  -e "^\tlibphysfs.[0-9].dylib")
+    done < <(otool -L $lib | grep -o  -e "^\t/opt/[a-zA-Z0-9_./-]*"  -e "^\t/usr/local/[a-zA-Z0-9_./-]*"  -e "^\tlibphysfs.[0-9].dylib" -e "^\tlibopenal.[0-9].dylib")
   done
 
   #Swap over the new list
@@ -93,6 +98,9 @@ copied_libs+=($APPBINARY)
 for lib in "${lib_deps[@]}"; do
   #Grumble grumble, physfs...
   if [[ $lib == "libphysfs"* ]]; then
+    lib="/opt/local/lib/$lib"
+  fi
+  if [[ $lib == "libopenal"* ]]; then
     lib="/opt/local/lib/$lib"
   fi
 
@@ -134,6 +142,11 @@ cp -r $ORIGRES/ld_icon.icns $APPNAME/Contents/Resources/
 cp -r $ORIGRES/mkxp.conf $APPNAME/Contents/Resources/
 cp -r $ORIGRES/steam_appid.txt $APPNAME/Contents/Resources/
 
+
+#Remove Mercurial stuff
+echo "Removing Mercurial directories..."
+rm -rf $APPNAME/Contents/Resources/Audio/.hg
+rm -rf $APPNAME/Contents/Resources/Graphics/.hg
 
 #We need a build date...
 SPECIAL_VERSION="2.1.$(date +%Y-%m-%d | sed "s|-||g")"
