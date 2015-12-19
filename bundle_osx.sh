@@ -164,11 +164,16 @@ appid=$(head -n 1 $ORIGRES/steam_appid.txt)
 #Now, do a sanity check.
 echo "Checking for potential linker problems..."
 for lib in "${copied_libs[@]}"; do
+  echo "Checking $lib:"
+
   if [[ $lib == *"MacOS/mkxp"* ]]; then
     otool -L $lib | tail -n +2  | grep -e "/opt/local/lib" -e "/usr/local/lib"
   else
     otool -L $lib | tail -n +3  | grep -e "/opt/local/lib" -e "/usr/local/lib"
   fi
+
+  #Sanity check 2
+  otool -l $lib  | grep -A2 MIN_MACOSX | tail -n1 | grep 10.[^7]
 done
 echo "Potential problems (if any) listed above."
 
