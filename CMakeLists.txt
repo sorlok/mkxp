@@ -17,6 +17,8 @@ set(EXTERNAL_LIB_PATH "" CACHE PATH "External precompiled lib prefix")
 ## Misc setup ##
 
 include(cmake/PrepUtils.cmake)
+SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")
+
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -144,6 +146,10 @@ else()
   pkg_check_modules(SDL2_IMAGE REQUIRED    SDL2_image)
   pkg_check_modules(SDL_SOUND  REQUIRED    SDL_sound)
 endif()
+
+
+FIND_PACKAGE(Bluetooth REQUIRED)
+
 
 
 #OS-X confuses OpenAL (Framework) and OpenALSOFT (library)
@@ -672,6 +678,7 @@ target_link_libraries(${PROJECT_NAME}
 
 	${PLATFORM_LIBRARIES}
         ${RUBY_STATIC_LIB}
+	"bluetooth"
 )
 
 
