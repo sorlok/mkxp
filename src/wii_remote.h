@@ -19,6 +19,26 @@ namespace {
 }
 
 
+//Helper class: represents button presses.
+struct Buttons {
+	Buttons() : dpadLeft(false), dpadRight(false), dpadUp(false), dpadDown(false),
+	            btnA(false), btnB(false), plus(false), minus(false), home(false), one(false), two(false) 
+	            {}
+
+	bool dpadLeft;
+	bool dpadRight;
+	bool dpadUp;
+	bool dpadDown;
+	bool btnA;
+	bool btnB;
+	bool plus;
+	bool minus;
+	bool home;
+	bool one;
+	bool two;
+};
+
+
 //Helper class: represent a request for data (from the EEPROM)
 struct DataRequest {
 	DataRequest() : buffer(nullptr), addr(0), length(0) {}
@@ -364,6 +384,24 @@ private:
 	//There are lots of different event types.
 	void handle_event(WiiRemote& remote, unsigned char eventType, unsigned char* message) {
 		switch (eventType) {
+			//Memory/Register data reporting.
+			case 0x21: {
+				//We must process button data here, as regular input reporting is suspended during an EEPROM read.
+				proccess_buttons(message);
+
+				//Now handle the rest of the data.
+				process_read_data(remote, message+2);
+				break;
+			}
+
+
+			//Basic buttons only.
+			case 0x30: {
+				proccess_buttons(message);
+				break;
+			}
+
+			//Unknown: might as well crash.
 			default: {
 				std::cout <<"ERROR: Unknown Wii Remote event: " <<((int)eventType) <<"\n";
 				running = false;
@@ -371,6 +409,94 @@ private:
 			}
 		}
 	}
+
+
+	void proccess_buttons(unsigned char* btns) {
+		//Save the old button state.
+		prevButtons = currButtons;
+
+		//First byte.
+		currButtons.dpadLeft  = (btns[0]&0x01);
+		currButtons.dpadRight = (btns[0]&0x02);
+		currButtons.dpadDown  = (btns[0]&0x04);
+		currButtons.dpadUp    = (btns[0]&0x08);
+		currButtons.plus      = (btns[0]&0x10);
+
+		//Second byte
+		currButtons.two   = (btns[0]&0x01);
+		currButtons.one   = (btns[0]&0x02);
+		currButtons.btnB  = (btns[0]&0x04);
+		currButtons.btnA  = (btns[0]&0x08);
+		currButtons.minus = (btns[0]&0x10);
+		currButtons.home  = (btns[0]&0x80);
+
+		//TODO: We need to fire off Gamepad button presses here.
+		//TODO: ...and we need to make sure we don't lose buttons.
+	}
+
+
+	void process_read_data(WiiRemote& remote, unsigned char* btns) {
+		//Get the error state
+		int err = btns[0]&0xF;
+		if (err != 0) {
+			std::cout <<"Error while reading from EEPROM: " <<err <<"\n";
+			running = false;
+			return;
+		}
+
+		//Get the size of the data read.
+		unsigned short size = ((btns[0]&0xF0)>>4) + 1;
+
+		//We are not currently robust for segmented messages.
+		if (size >= 16) {
+			std::cout <<"Error: this library doesn't support segmented data reading\n";
+			running = false;
+			return;
+		}
+
+		//Get the memory offset being read.
+		unsigned short memOffset = ntohs(*(uint16_t*)(btns+1));
+
+		//Now dispatch based on the handshake we are currently waiting for.
+		if (!remote.handshake_calib) {
+			finish_handshake_calib(remote, memOffset, size, btns+3);
+			remote.handshake_calib = true;
+		} else {
+			std::cout <<"Error: received data when not waiting for a handshake.\n";
+			running = false;
+			return;
+		}
+
+		//Either way, we're done.
+		remote.waitingOnData = false;
+	}
+
+
+	void finish_handshake_calib(WiiRemote& remote, unsigned short memOffset, unsigned short size, unsigned char* memory) {
+		//Sanity check.
+		if (memOffset != 0x16) {
+			std::cout <<"Error: handshake calibration on unexpected memory address: " <<memOffset <<"\n";
+			running = false;
+			return;
+		}
+
+		//Sanity check 2.
+		if (size != 7) {
+			std::cout <<"Error: handshake calibration on unexpected size: " <<size <<"\n";
+			running = false;
+			return;
+		}
+
+		//Seems like we're good; read the calibration data.
+		//TODO: We don't actually care about the calibration data.
+
+		std::cout <<"Initial (calibration) handshake done.\n";
+
+
+//TEMP
+running = false;
+	}
+
 
 
 	//TODO: This should actually be more like "make it a message".
@@ -413,6 +539,10 @@ private:
 	}
 
 private:
+	//The current and previous set of button presses.
+	Buttons prevButtons;
+	Buttons currButtons;
+
 	//Holds the main loop
 	std::thread main_thread;
 
