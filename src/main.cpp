@@ -42,6 +42,8 @@
 
 #include "icon.png.xxd"
 
+#include "wii_remote.h"
+
 static void
 rgssThreadError(RGSSThreadData *rtData, const std::string &msg)
 {
@@ -135,8 +137,14 @@ int rgssThreadFun(void *userdata)
 		return 0;
 	}
 
+	//Grab our WiiRemotes.
+	WiiRemoteMgr wiiMgr;
+
 	/* Start script execution */
 	scriptBinding->execute();
+
+	//Close down WiiRemotes.
+	wiiMgr.shutdown();
 
 	threadData->rqTermAck.set();
 	threadData->ethread->requestTerminate();
