@@ -70,7 +70,7 @@ struct WiiRemote {
 //This class wraps all the functionality required to read sensor data from a Wii Remote.
 class WiiRemoteMgr {
 public:
-	WiiRemoteMgr() : running(true) {
+	WiiRemoteMgr() : running(true), currStepCount(0) {
 		//Start up the main thread.
 		main_thread = std::thread(&WiiRemoteMgr::run_main, this);
 	}
@@ -122,6 +122,8 @@ private:
 			if (!handshake_calib(*remote)) {
 				return false;
 			}
+
+			//TODO: We eventually want to turn on the Motion Plus.
 		}
 
 		//Third step: handshake each one (todo: separate out later)
@@ -242,10 +244,16 @@ private:
 		std::cout <<"Starting handshake (calibration) for Wii Remote\n";
 
 		//We start with an LED change request.
-		send_leds(remote, false, false, false, true);
+		send_leds(remote, true, true, true, true);
 
 		//Then set a good starting mode for data reporting.
 		send_data_reporting(remote, true, 0x30);
+
+		//Send a request for data.
+		send_status_request(remote);
+
+		//Maybe do this first?
+		send_data_reporting(remote, true, 0x35);
 
 		//Send request for calibration data.
 		unsigned char* buf = (unsigned char*)malloc(sizeof(unsigned char) * 8); //TODO: leaks?
@@ -286,6 +294,11 @@ private:
 			std::cout <<"Requesting a read at address: " <<req.addr <<" of size: " <<req.length <<"\n";
 			send_to_wii_remote(remote, 0x17, buf, 6);
 		}
+	}
+
+	void send_status_request(WiiRemote& remote) {
+		unsigned char buff = 0;
+		send_to_wii_remote(remote, 0x15, &buff, 1);
 	}
 
 	void send_leds(WiiRemote& remote, bool L1, bool L2, bool L3, bool L4) {
@@ -382,8 +395,22 @@ private:
 
 
 	//There are lots of different event types.
+	////////////////////////
+	//TODO: We should check that we actually read the correct amount of data.
+	////////////////////////
 	void handle_event(WiiRemote& remote, unsigned char eventType, unsigned char* message) {
 		switch (eventType) {
+			//Status response
+			case 0x20: {
+				//Always process buttons.
+				proccess_buttons(message);
+
+				//Now read the status information.
+				process_status_response(remote, messagee+2);
+				break;
+			}
+
+
 			//Memory/Register data reporting.
 			case 0x21: {
 				//We must process button data here, as regular input reporting is suspended during an EEPROM read.
@@ -398,6 +425,13 @@ private:
 			//Basic buttons only.
 			case 0x30: {
 				proccess_buttons(message);
+				break;
+			}
+
+			//Basic buttons plus accelerometer plus 16 extension bytes.
+			case 0x35: {
+				proccess_buttons(message);
+				proccess_accellerometer(message+2);
 				break;
 			}
 
@@ -432,6 +466,40 @@ private:
 
 		//TODO: We need to fire off Gamepad button presses here.
 		//TODO: ...and we need to make sure we don't lose buttons.
+	}
+
+	//Process accelerometer bytes.
+	void proccess_accellerometer(WiiRemote& remote, unsigned char* data) {
+		//Retrieve.
+		unsigned char accX = data[0];
+		unsigned char accY = data[1];
+		unsigned char accZ = data[2];
+
+		//Do pedometer calculation.
+		throw "TODO: Pull algorithm from desktop and cleanup.";
+		currStepCount += 0;
+	}
+
+
+	void process_status_response(WiiRemote& remote, unsigned char* data) {
+		//LED state (0xF0)>>4
+		//Don't care.
+
+		//Battery is flat.
+		if (data[0] & 0x01) {
+			std::cout <<"Error, battery is flat.\n";
+			running = false;
+			return;
+		}
+
+		//Extension connected.
+		bool extensionConnected = data[0]&0x02;
+
+		//Speaker status (0x04) 
+		//Don't care.
+
+		//IR camera enabled (0x08) 
+		//Don't care.
 	}
 
 
@@ -489,12 +557,7 @@ private:
 
 		//Seems like we're good; read the calibration data.
 		//TODO: We don't actually care about the calibration data.
-
 		std::cout <<"Initial (calibration) handshake done.\n";
-
-
-//TEMP
-running = false;
 	}
 
 
@@ -542,6 +605,9 @@ private:
 	//The current and previous set of button presses.
 	Buttons prevButtons;
 	Buttons currButtons;
+
+	//Current step count (since last check).
+	int currStepCount;
 
 	//Holds the main loop
 	std::thread main_thread;
