@@ -14,6 +14,10 @@
 #include <bluetooth/hci_lib.h>
 #include <bluetooth/l2cap.h>
 
+namespace {
+	const unsigned int MAX_EVENT_LEGNTH = 32;
+}
+
 
 //Helper class: represent a request for data (from the EEPROM)
 struct DataRequest {
@@ -38,6 +42,8 @@ struct WiiRemote {
 	//List of pending requests. Front = oldest request.
 	std::deque<DataRequest> requests;
 	bool waitingOnData;  //If false, we can send out a new request.
+
+	unsigned char event_buf[MAX_EVENT_LEGNTH]; //Stores the currently-read data.
 };
 
 
@@ -68,8 +74,9 @@ protected:
 		std::cout <<"WiiRemote: At start of main loop.\n";
 		while (running.load()) {
 			for (std::shared_ptr<WiiRemote>& remote : remotes) {
-				poll(*remote);
+				sendPending(*remote);
 			}
+			poll();
 
 			//Relinquish control (next Wii input comes in after 10ms)
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -214,6 +221,12 @@ private:
 	bool handshake_calib(WiiRemote& remote) {
 		std::cout <<"Starting handshake (calibration) for Wii Remote\n";
 
+		//We start with an LED change request.
+		send_leds(remote, false, false, false, true);
+
+		//Then set a good starting mode for data reporting.
+		send_data_reporting(remote, true, 0x30);
+
 		//Send request for calibration data.
 		unsigned char* buf = (unsigned char*)malloc(sizeof(unsigned char) * 8); //TODO: leaks?
 
@@ -233,7 +246,7 @@ private:
 	}
 
 
-	void poll(WiiRemote& remote) {
+	void sendPending(WiiRemote& remote) {
 		//Send out pending data?
 		if (!remote.waitingOnData && !remote.requests.empty()) {
 			//Get the next request.
@@ -253,10 +266,110 @@ private:
 			std::cout <<"Requesting a read at address: " <<req.addr <<" of size: " <<req.length <<"\n";
 			send_to_wii_remote(remote, 0x17, buf, 6);
 		}
+	}
+
+	void send_leds(WiiRemote& remote, bool L1, bool L2, bool L3, bool L4) {
+		unsigned char buff = 0;
+		if (L1) {
+			buff |= 0x10;
+		}
+		if (L2) {
+			buff |= 0x20;
+		}
+		if (L3) {
+			buff |= 0x40;
+		}
+		if (L4) {
+			buff |= 0x80;
+		}
+
+		send_to_wii_remote(remote, 0x11, &buff, 1);
+	}
+
+	void send_data_reporting(WiiRemote& remote, bool continuous, unsigned char mode) {
+		unsigned char buff[] = {0,0};
+		if (continuous) {
+			buff[0] |= 0x4;
+		}
+		buff[1] = mode;
+
+		send_to_wii_remote(remote, 0x12, buff, 2);
+	}
+
+	void poll() {
+		//select() should block for at most 1/2000s
+		struct timeval tv;
+		tv.tv_sec = 0;
+		tv.tv_usec = 500;
+
+		//Create a set of file descriptors to check for.
+		fd_set fds;
+		FD_ZERO(&fds);
+
+		//Find the highest FD to check. select() will scan from 0..max_fd-1
+		int max_fd = -1;
+		for (std::shared_ptr<WiiRemote>& remote : remotes) {
+			FD_SET(remote->sock, &fds);
+			if (remote->sock > max_fd) {
+				max_fd = remote->sock;
+			}
+		}
+
+		//Nothing to poll?
+		if (max_fd == -1) {
+			return;
+		}
+
+		//select() and check for errors.
+		if (select(max_fd+1, &fds, NULL, NULL, &tv) < 0) {
+			std::cout <<"Error: Unable to select() the wiimote interrupt socket(s).\n";
+			running = false;
+			return ;
+		}
+
+		//Check each socket for an event.
+		for (std::shared_ptr<WiiRemote>& remote : remotes) {
+			if (FD_ISSET(remote->sock, &fds)) {
+				//Read the pending message.
+				memset(remote->event_buf, 0, MAX_EVENT_LEGNTH);
+				int r = ::read(remote->sock, remote->event_buf, MAX_EVENT_LEGNTH);
+
+				//Error reading?
+				if (r < 0) {
+					std::cout <<"Error receiving Wii Remote data\n";
+					running = false;
+					return;
+				}
+
+				//If select() returned true, but read() returns nothing, the remote was disconnected.
+				if (r == 0) {
+					std::cout <<"Wii Remote disconnected.\n";
+					running = false;
+					return;
+				}
+
+				std::cout <<"READ: " <<r <<" : ";
+				for (int i=0; i<r; i++) {
+					printf(",0x%x", remote->event_buf[i]);
+				}
+				std::cout <<"\n";
+
+				//Now deal with it.
+				handle_event(*remote, remote->event_buf[1], remote->event_buf+2);
+			}
+		}
+	}
 
 
-		//TODO: Need to respond to poll data here. Also need to handle the second half of the handshake, and other things (like report types).
-
+	//There are lots of different event types.
+	void handle_event(WiiRemote& remote, unsigned char eventType, unsigned char* message) {
+		switch (eventType) {
+			default: {
+				std::cout <<"ERROR: Unknown Wii Remote event: " <<((int)eventType) <<"\n";
+				running = false;
+				return;
+			}
+		}
 	}
 
 
@@ -267,6 +380,15 @@ private:
 		buffer[0] = 0xa2;
 		buffer[1] = reportType;
 		memcpy(buffer+2, message, length);
+
+		//TEMP
+		std::cout <<"sending: [";
+		for (size_t i=0; i<length+2; i++) {
+			if (i!=0) {std::cout <<",";}
+			printf("0x%x", buffer[i]);
+		}
+		std::cout <<"]\n";
+		//END_TEMP
 
 		//Make sure to disable rumble (really!)
 		buffer[2] &= 0xFE;
