@@ -76,7 +76,7 @@ struct DataRequest {
 
 //Helper class: represents a Wii Remote
 struct WiiRemote {
-	WiiRemote(bdaddr_t bdaddr) : bdaddr(bdaddr), sock(-1), ctrl_sock(-1), handshake_calib(false), waitingOnData(false) {}
+	WiiRemote(bdaddr_t bdaddr) : bdaddr(bdaddr), sock(-1), ctrl_sock(-1), handshake_calib(false), waitingOnData(false), id(-1), lastStatus(0) {}
 	bdaddr_t bdaddr;  //Bluetooth address; i.e.,: 2C:10:C1:C2:D6:5E
 	int sock;         //Data channel ("in_socket")
 	int ctrl_sock;    //Control channel ("out_socket") (needed?)
@@ -92,6 +92,8 @@ struct WiiRemote {
 
 	unsigned char event_buf[MAX_EVENT_LEGNTH]; //Stores the currently-read data.
 
+	int lastStatus; //How many ticks since we got a status report.
+
 	WiiButtons currButtons;
 };
 
@@ -99,7 +101,7 @@ struct WiiRemote {
 //This class wraps all the functionality required to read sensor data from a Wii Remote.
 class WiiRemoteMgr {
 public:
-	WiiRemoteMgr() : currAffinity(-1), currStepCount(0), sdlKnowsJoystick(false), lastHat(0), running(true) {
+	WiiRemoteMgr() : currAffinity(-1), currStepCount(0), batteryStatus(0), sdlKnowsJoystick(false), lastHat(0), running(true) {
 		//Start up the main thread.
 		main_thread = std::thread(&WiiRemoteMgr::run_main, this);
 	}
@@ -114,6 +116,11 @@ public:
 	//Get the step count and clear it.
 	int get_and_reset_steps() {
 		return std::atomic_exchange(&currStepCount, 0);
+	}
+
+	//Get the battery status.
+	float get_battery_status() {
+		return batteryStatus;
 	}
 
 
@@ -565,6 +572,12 @@ private:
 				return;
 			}
 		}
+
+		//Finally, send a status request if we've waited a second.
+		remote.lastStatus += 1;
+		if (remote.lastStatus >= 100) {
+			send_status_request(remote);
+		}
 	}
 
 
@@ -744,11 +757,7 @@ private:
 		//Don't care.
 
 		//Battery is flat.
-		if (data[0] & 0x01) {
-			std::cout <<"Error, battery is flat.\n";
-			running = false;
-			return;
-		}
+		bool batteryFlat = (data[0] & 0x01);
 
 		//Extension connected.
 		bool extensionConnected = data[0]&0x02;
@@ -758,6 +767,18 @@ private:
 
 		//IR camera enabled (0x08) 
 		//Don't care.
+
+		//Battery
+		int batteryLvl = data[3];
+
+		//Convert/report battery level.
+		if (batteryFlat) {
+			batteryStatus = -1;
+		} else {
+			batteryStatus = batteryLvl / 255.0f;
+		}
+		//Note it.
+		remote.lastStatus = 0;
 	}
 
 
@@ -896,6 +917,9 @@ private:
 
 	//Current step count (since last check).
 	std::atomic<int> currStepCount;
+
+	//Battery status. (-1 = flat, otherwise 0.0 to 1.0)
+	std::atomic<float> batteryStatus;
 
 	//Does SDL know about this joystick?
 	bool sdlKnowsJoystick;
