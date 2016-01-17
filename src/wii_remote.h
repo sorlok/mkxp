@@ -20,8 +20,8 @@ namespace {
 
 
 //Helper class: represents button presses.
-struct Buttons {
-	Buttons() : dpadLeft(false), dpadRight(false), dpadUp(false), dpadDown(false),
+struct WiiButtons {
+	WiiButtons() : dpadLeft(false), dpadRight(false), dpadUp(false), dpadDown(false),
 	            btnA(false), btnB(false), plus(false), minus(false), home(false), one(false), two(false) 
 	            {}
 
@@ -36,6 +36,21 @@ struct Buttons {
 	bool home;
 	bool one;
 	bool two;
+};
+
+//Helper class: represents Gamepad button presses (translated from Wii).
+struct WiiTransGamepad {
+	WiiTransGamepad() : dpadLeft(false), dpadRight(false), dpadUp(false), dpadDown(false),
+						btnOk(false), btnCancel(false), btnMenu(false)
+						{}
+
+	bool dpadLeft;
+	bool dpadRight;
+	bool dpadUp;
+	bool dpadDown;
+	bool btnOk;
+	bool btnCancel;
+	bool btnMenu;
 };
 
 
@@ -63,14 +78,18 @@ struct WiiRemote {
 	std::deque<DataRequest> requests;
 	bool waitingOnData;  //If false, we can send out a new request.
 
+	int id; //Index in array.
+
 	unsigned char event_buf[MAX_EVENT_LEGNTH]; //Stores the currently-read data.
+
+	WiiButtons currButtons;
 };
 
 
 //This class wraps all the functionality required to read sensor data from a Wii Remote.
 class WiiRemoteMgr {
 public:
-	WiiRemoteMgr() : running(true), currStepCount(0) {
+	WiiRemoteMgr() : currAffinity(-1), currStepCount(0), running(true) {
 		//Start up the main thread.
 		main_thread = std::thread(&WiiRemoteMgr::run_main, this);
 	}
@@ -171,6 +190,7 @@ private:
 			if ((info[i].dev_class[0] == 0x08) && (info[i].dev_class[1] == 0x05) && (info[i].dev_class[2] == 0x00)) {
 				//Found
 				std::shared_ptr<WiiRemote> remote(new WiiRemote(info[i].bdaddr));
+				remote->id = remotes.size();
 				remotes.push_back(remote);
 
 
@@ -186,7 +206,7 @@ private:
 		//Enough remotes?
 		if (remotes.size() != 2) {
 			std::cout <<"Error: Expected 2 Wii Remotes; found " <<remotes.size() <<"\n";
-			//return false; //TODO: Later.
+			return false;
 		}
 
 		//Good.
@@ -381,11 +401,13 @@ private:
 					return;
 				}
 
+				/*
 				std::cout <<"READ: " <<r <<" : ";
 				for (int i=0; i<r; i++) {
 					printf(",0x%x", remote->event_buf[i]);
 				}
 				std::cout <<"\n";
+				*/
 
 				//Now deal with it.
 				handle_event(*remote, remote->event_buf[1], remote->event_buf+2);
@@ -403,10 +425,10 @@ private:
 			//Status response
 			case 0x20: {
 				//Always process buttons.
-				proccess_buttons(message);
+				proccess_buttons(remote, message);
 
 				//Now read the status information.
-				process_status_response(remote, messagee+2);
+				process_status_response(remote, message+2);
 				break;
 			}
 
@@ -414,7 +436,7 @@ private:
 			//Memory/Register data reporting.
 			case 0x21: {
 				//We must process button data here, as regular input reporting is suspended during an EEPROM read.
-				proccess_buttons(message);
+				proccess_buttons(remote, message);
 
 				//Now handle the rest of the data.
 				process_read_data(remote, message+2);
@@ -424,14 +446,14 @@ private:
 
 			//Basic buttons only.
 			case 0x30: {
-				proccess_buttons(message);
+				proccess_buttons(remote, message);
 				break;
 			}
 
 			//Basic buttons plus accelerometer plus 16 extension bytes.
 			case 0x35: {
-				proccess_buttons(message);
-				proccess_accellerometer(message+2);
+				proccess_buttons(remote, message);
+				proccess_accellerometer(remote, message+2);
 				break;
 			}
 
@@ -445,24 +467,69 @@ private:
 	}
 
 
-	void proccess_buttons(unsigned char* btns) {
-		//Save the old button state.
-		prevButtons = currButtons;
-
+	void proccess_buttons(WiiRemote& remote, unsigned char* btns) {
 		//First byte.
-		currButtons.dpadLeft  = (btns[0]&0x01);
-		currButtons.dpadRight = (btns[0]&0x02);
-		currButtons.dpadDown  = (btns[0]&0x04);
-		currButtons.dpadUp    = (btns[0]&0x08);
-		currButtons.plus      = (btns[0]&0x10);
+		remote.currButtons.dpadLeft  = (btns[0]&0x01);
+		remote.currButtons.dpadRight = (btns[0]&0x02);
+		remote.currButtons.dpadDown  = (btns[0]&0x04);
+		remote.currButtons.dpadUp    = (btns[0]&0x08);
+		remote.currButtons.plus      = (btns[0]&0x10);
 
 		//Second byte
-		currButtons.two   = (btns[0]&0x01);
-		currButtons.one   = (btns[0]&0x02);
-		currButtons.btnB  = (btns[0]&0x04);
-		currButtons.btnA  = (btns[0]&0x08);
-		currButtons.minus = (btns[0]&0x10);
-		currButtons.home  = (btns[0]&0x80);
+		remote.currButtons.two   = (btns[1]&0x01);
+		remote.currButtons.one   = (btns[1]&0x02);
+		remote.currButtons.btnB  = (btns[1]&0x04);
+		remote.currButtons.btnA  = (btns[1]&0x08);
+		remote.currButtons.minus = (btns[1]&0x10);
+		remote.currButtons.home  = (btns[1]&0x80);
+
+		//Plus resets the controller affinity.
+		if (remote.currButtons.plus && currAffinity >= 0) {
+			//Reset LEDs.
+			for (std::shared_ptr<WiiRemote>& rm : remotes) {
+				send_leds(*rm, true, true, true, true);
+			}
+			currAffinity = -1;
+			currGamepad = WiiTransGamepad();
+			return;
+		}
+
+		//Check affinity.
+		if (currAffinity == -1) {
+			//Always reset on afffinity -1
+			currGamepad = WiiTransGamepad();
+
+			//Additionally, see if we can break out of affinity -1
+			if (remote.currButtons.btnA || remote.currButtons.btnB) {
+				currAffinity = remote.id;
+			} else if (remote.currButtons.dpadLeft || remote.currButtons.dpadRight || remote.currButtons.dpadUp || remote.currButtons.dpadDown) {
+				currAffinity = 1 - remote.id;
+			} else {
+				//No affinity = no input
+				return;
+			}
+
+			//Set LEDs based on affinity.
+			for (std::shared_ptr<WiiRemote>& rm : remotes) {
+				if (rm->id == currAffinity) {
+				  send_leds(*rm, true, false, false, false);
+				} else {
+				  send_leds(*rm, false, true, false, false);
+				}
+			}
+		}
+
+		//Now add input based on this remote's affinity.
+		if (currAffinity == remote.id) {
+			currGamepad.btnOk = remote.currButtons.btnA;
+			currGamepad.btnCancel = remote.currButtons.btnB;
+		} else {
+			currGamepad.dpadLeft = remote.currButtons.dpadDown;
+			currGamepad.dpadRight = remote.currButtons.dpadUp;
+			currGamepad.dpadUp = remote.currButtons.dpadLeft;
+			currGamepad.dpadDown = remote.currButtons.dpadRight;
+			currGamepad.btnMenu = remote.currButtons.btnB;
+		}
 
 		//TODO: We need to fire off Gamepad button presses here.
 		//TODO: ...and we need to make sure we don't lose buttons.
@@ -476,8 +543,98 @@ private:
 		unsigned char accZ = data[2];
 
 		//Do pedometer calculation.
-		throw "TODO: Pull algorithm from desktop and cleanup.";
-		currStepCount += 0;
+//TODO: algorithm cleanup
+	//State variable: Are we on an upward slope (1), downward slope (-1), or in the neutral zone (0)
+	static int slope = 0;
+	static int safety = 0; //Allows us to build up ticks.
+
+	//State variable: store and average the last 10 values.
+	static double bucket_x = 0.0;
+	static double bucket_y = 0.0;
+	static double bucket_z = 0.0;
+	static int curr_bucket = 0;
+
+	//What we consider the middle value, and its range (+/-)
+	const double middle = 26.5;
+	const double range = 5.0;
+
+
+
+	//Add to the current bucket.
+	bucket_x += accX - 0x80;
+	bucket_y += accY - 0x80;
+	bucket_z += accZ - 0x80;
+	curr_bucket += 1;
+
+	//Have we filled a bucket?
+	if (curr_bucket == 10) {
+		//Average
+		bucket_x /= 10.0;
+		bucket_y /= 10.0;
+		bucket_z /= 10.0;
+
+		//Compute the magnitude
+		double magnitude = sqrt(bucket_x*bucket_x + bucket_y*bucket_y + bucket_z*bucket_z);
+
+		//TEMP
+		//int did_step = 0;
+
+		//Different slope require different actions.
+		if (slope == 0) {
+			//We start off in the middle, and revert back there during times of boredom. Thus, we need some real intertia to get out of there.
+			safety = 0;
+			if (magnitude >= middle+range) {
+				slope = 1;
+			} else if (magnitude <= middle-range) {
+				slope = -1;
+			}
+		} else if (slope == 1) {
+			//We are in the high range. Only react if we drop below the high water mark.
+			if (magnitude < middle+range) {
+				//Are we below the low water mark?
+				if (magnitude <= middle-range) {
+					//Step!
+					currStepCount += 0;
+					//did_step = 1; //TEMP
+					slope = -1;
+					safety = 0;
+				}
+
+				//We get five "ticks" of safety space within which to switch over to the low water mark.
+				safety += 1;
+				if (safety >= 5) {
+					slope = 0;
+				}
+			}
+		} else if (slope == -1) {
+			//We are in the low range. Only react if we drop below the low water mark.
+			if (magnitude > middle-range) {
+				//Are we above the high water mark?
+				if (magnitude >= middle+range) {
+					//End-of-step. Doesn't really matter.
+					//did_step = 1; //TEMP
+					slope = 1;
+					safety = 0;
+				}
+
+				//We get five "ticks" of safety space within which to switch over to the low water mark.
+				safety += 1;
+				if (safety >= 5) {
+					slope = 0;
+				}
+			}
+		}
+
+		//Nada
+		//if (!did_step) { //printf(".\n"); }
+
+		//Reset
+		bucket_x = 0;
+		bucket_y = 0;
+		bucket_z = 0;
+		curr_bucket = 0;
+	}
+//END_TODO
 	}
 
 
@@ -571,12 +728,14 @@ private:
 		memcpy(buffer+2, message, length);
 
 		//TEMP
+		/*
 		std::cout <<"sending: [";
 		for (size_t i=0; i<length+2; i++) {
 			if (i!=0) {std::cout <<",";}
 			printf("0x%x", buffer[i]);
 		}
 		std::cout <<"]\n";
+		*/
 		//END_TEMP
 
 		//Make sure to disable rumble (really!)
@@ -602,9 +761,14 @@ private:
 	}
 
 private:
-	//The current and previous set of button presses.
-	Buttons prevButtons;
-	Buttons currButtons;
+	//The current buttons, translated to "Gamepad" functionality.
+	WiiTransGamepad currGamepad;
+
+	//Current controller affinity
+	//  -1 = unknown (4 LEDs)
+	//   0 = first remote is RHS  (Accept/Cancel)
+	//   1 = second remote is RHS (Accept/Cancel)
+	int currAffinity;
 
 	//Current step count (since last check).
 	int currStepCount;
