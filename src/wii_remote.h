@@ -14,6 +14,8 @@
 #include <bluetooth/hci_lib.h>
 #include <bluetooth/l2cap.h>
 
+#include <SDL_joystick.h>
+
 namespace {
 	const unsigned int MAX_EVENT_LEGNTH = 32;
 }
@@ -89,7 +91,7 @@ struct WiiRemote {
 //This class wraps all the functionality required to read sensor data from a Wii Remote.
 class WiiRemoteMgr {
 public:
-	WiiRemoteMgr() : currAffinity(-1), currStepCount(0), running(true) {
+	WiiRemoteMgr() : currAffinity(-1), currStepCount(0), sdlKnowsJoystick(false), running(true) {
 		//Start up the main thread.
 		main_thread = std::thread(&WiiRemoteMgr::run_main, this);
 	}
@@ -115,7 +117,9 @@ protected:
 			for (std::shared_ptr<WiiRemote>& remote : remotes) {
 				sendPending(*remote);
 			}
+			WiiTransGamepad oldGamepad = currGamepad;
 			poll();
+			pushKeys(oldGamepad);
 
 			//Relinquish control (next Wii input comes in after 10ms)
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -414,6 +418,49 @@ private:
 			}
 		}
 	}
+
+
+    void pushKeys(const WiiTransGamepad& oldGamepad) {
+    	//Check each key for keydown/up
+    	check_keyupdown(oldGamepad.btnOk, currGamepad.btnOk, 0, false);
+
+    }
+
+    void check_keyupdown(bool prevValue, bool currValue, uint8_t buttonId, bool isHat) {
+    	//TODO: Investigate.
+    	static uint32_t currTimestamp = 0; 
+
+    	//Only update on change.
+    	if (prevValue == currValue) {
+    		return;
+    	}
+
+    	//Updated timestamp.
+    	currTimestamp += 1;
+
+    	//Create the base event.
+    	SDL_Event event;
+
+    	//Now send either a button press or a hat press.
+    	if (isHat) {
+    		//Make a new hat event.
+
+    	} else {
+    		//Make a new Joystick event.
+    		event.jbutton.timestamp = currTimestamp;
+    		event.jbutton.type = currValue ? SDL_JOYBUTTONDOWN : SDL_JOYBUTTONUP;
+    		event.jbutton.which = 0; //Joystick ID; probably needs to be 0 for mkxp?
+    		event.jbutton.button = buttonId;
+    		event.jbutton.state = currValue ? SDL_PRESSED : SDL_RELEASED;
+    	}
+
+    	//Try to send it.
+   		if (SDL_PushEvent(&event) != 1) {
+   			std::cout <<"Error pushing event: " <<SDL_GetError() <<"\n";
+   			running = false;
+   			return;
+   		}
+    }
 
 
 	//There are lots of different event types.
@@ -715,6 +762,26 @@ private:
 		//Seems like we're good; read the calibration data.
 		//TODO: We don't actually care about the calibration data.
 		std::cout <<"Initial (calibration) handshake done.\n";
+
+
+		//At some point, we need to tell SDL about this joystick.
+		if (!sdlKnowsJoystick) {
+		  sdlKnowsJoystick = true;
+
+    	  SDL_Event event;
+   		  event.jdevice.timestamp = 0; //See other JOY events (which start from 1).
+   		  event.jdevice.type = SDL_JOYDEVICEADDED;
+   		  event.jdevice.which = 0; //Joystick ID; probably needs to be 0 for mkxp?
+
+    	  //Try to send it.
+   		  if (SDL_PushEvent(&event) != 1) {
+   			  std::cout <<"Error pushing event: " <<SDL_GetError() <<"\n";
+   			  running = false;
+   			  return;
+   		  }
+
+   		  std::cout <<"Wii Joystick connected to SDL.\n";
+   		}
 	}
 
 
@@ -772,6 +839,9 @@ private:
 
 	//Current step count (since last check).
 	int currStepCount;
+
+	//Does SDL know about this joystick?
+	bool sdlKnowsJoystick;
 
 	//Holds the main loop
 	std::thread main_thread;
