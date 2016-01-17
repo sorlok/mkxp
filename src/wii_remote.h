@@ -101,7 +101,7 @@ struct WiiRemote {
 //This class wraps all the functionality required to read sensor data from a Wii Remote.
 class WiiRemoteMgr {
 public:
-	WiiRemoteMgr() : currAffinity(-1), currStepCount(0), batteryStatus(0), sdlKnowsJoystick(false), lastHat(0), running(true) {
+	WiiRemoteMgr() : currAffinity(-1), currStepCount(0), batteryStatusRHS(0), batteryStatusLHS(0), sdlKnowsJoystick(false), lastHat(0), running(true) {
 		//Start up the main thread.
 		main_thread = std::thread(&WiiRemoteMgr::run_main, this);
 	}
@@ -119,10 +119,12 @@ public:
 	}
 
 	//Get the battery status.
-	float get_battery_status() {
-		return batteryStatus;
+	float get_battery_status_rhs() {
+		return batteryStatusRHS;
 	}
-
+	float get_battery_status_lhs() {
+		return batteryStatusLHS;
+	}
 
 
 protected:
@@ -772,11 +774,19 @@ private:
 		int batteryLvl = data[3];
 
 		//Convert/report battery level.
-		if (batteryFlat) {
-			batteryStatus = -1;
-		} else {
+		float batteryStatus = -1;
+		if (!batteryFlat) {
 			batteryStatus = batteryLvl / 255.0f;
 		}
+
+
+		//Assign it to the correct Wii Remote.
+		if (remote.id == currAffinity) {
+			batteryStatusRHS = batteryStatus;
+		} else if (currAffinity >= 0) {
+			batteryStatusLHS = batteryStatus;
+		}
+
 		//Note it.
 		remote.lastStatus = 0;
 	}
@@ -919,7 +929,8 @@ private:
 	std::atomic<int> currStepCount;
 
 	//Battery status. (-1 = flat, otherwise 0.0 to 1.0)
-	std::atomic<float> batteryStatus;
+	std::atomic<float> batteryStatusRHS;
+	std::atomic<float> batteryStatusLHS;
 
 	//Does SDL know about this joystick?
 	bool sdlKnowsJoystick;

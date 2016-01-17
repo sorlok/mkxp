@@ -75,6 +75,8 @@ struct SharedState
 	Input &input() const;
 	Audio &audio() const;
 	int wiiRemoteSteps() const;
+	float wiiRemoteBatteryRHS() const;
+	float wiiRemoteBatteryLHS() const;
 
 	GLState &_glState() const;
 

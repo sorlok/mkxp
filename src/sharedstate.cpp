@@ -250,6 +250,16 @@ int SharedState::wiiRemoteSteps() const
 	return p->wiiRemote.get_and_reset_steps();
 }
 
+float SharedState::wiiRemoteBatteryRHS() const
+{
+	return p->wiiRemote.get_battery_status_rhs();
+}
+
+float SharedState::wiiRemoteBatteryLHS() const
+{
+	return p->wiiRemote.get_battery_status_lhs();
+}
+
 void SharedState::setBindingData(void *data)
 {
 	p->bindingData = data;

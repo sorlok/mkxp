@@ -143,6 +143,27 @@ RB_METHOD(pedometerGetSteps)
 	return rb_int_new(res);
 }
 
+
+RB_METHOD(pedometerGetBatteryRHS)
+{
+	RB_UNUSED_PARAM;
+
+	int res = 0;
+	GUARD_EXC( res = shState->wiiRemoteBatteryRHS(); )
+
+	return rb_int_new(res);
+}
+
+RB_METHOD(pedometerGetBatteryLHS)
+{
+	RB_UNUSED_PARAM;
+
+	int res = 0;
+	GUARD_EXC( res = shState->wiiRemoteBatteryLHS(); )
+
+	return rb_int_new(res);
+}
+
 RB_METHOD(wolfpadPress)
 {
 	RB_UNUSED_PARAM;
@@ -194,6 +215,8 @@ void keysBindingInit()
 	VALUE module = rb_define_module("Pedometer");
 
 	_rb_define_module_function(module, "get_new_steps", pedometerGetSteps);
+	_rb_define_module_function(module, "get_battery_rhs", pedometerGetBatteryRHS);
+	_rb_define_module_function(module, "get_battery_lhs", pedometerGetBatteryLHS);
 	}
 
 
