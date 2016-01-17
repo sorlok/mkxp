@@ -776,7 +776,7 @@ private:
 		//Convert/report battery level.
 		float batteryStatus = -1;
 		if (!batteryFlat) {
-			batteryStatus = batteryLvl / 255.0f;
+			batteryStatus = batteryLvl / 200.0f;
 		}
 
 

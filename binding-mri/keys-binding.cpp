@@ -148,20 +148,20 @@ RB_METHOD(pedometerGetBatteryRHS)
 {
 	RB_UNUSED_PARAM;
 
-	int res = 0;
+	float res = 0;
 	GUARD_EXC( res = shState->wiiRemoteBatteryRHS(); )
 
-	return rb_int_new(res);
+	return rb_float_new(res);
 }
 
 RB_METHOD(pedometerGetBatteryLHS)
 {
 	RB_UNUSED_PARAM;
 
-	int res = 0;
+	float res = 0;
 	GUARD_EXC( res = shState->wiiRemoteBatteryLHS(); )
 
-	return rb_int_new(res);
+	return rb_float_new(res);
 }
 
 RB_METHOD(wolfpadPress)
