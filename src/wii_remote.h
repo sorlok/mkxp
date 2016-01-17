@@ -625,10 +625,10 @@ private:
 			currGamepad.btnOk = remote.currButtons.btnA;
 			currGamepad.btnCancel = remote.currButtons.btnB;
 		} else {
-			currGamepad.dpadLeft = remote.currButtons.dpadDown;
-			currGamepad.dpadRight = remote.currButtons.dpadUp;
-			currGamepad.dpadUp = remote.currButtons.dpadLeft;
-			currGamepad.dpadDown = remote.currButtons.dpadRight;
+			currGamepad.dpadLeft = remote.currButtons.dpadLeft;
+			currGamepad.dpadRight = remote.currButtons.dpadRight;
+			currGamepad.dpadUp = remote.currButtons.dpadUp;
+			currGamepad.dpadDown = remote.currButtons.dpadDown;
 			currGamepad.btnMenu = remote.currButtons.btnB;
 		}
 
