@@ -39,6 +39,8 @@
 #include "exception.h"
 #include "sharedmidistate.h"
 
+#include "wii_remote.h"
+
 #include <unistd.h>
 #include <stdio.h>
 #include <string>
@@ -79,6 +81,8 @@ struct SharedStatePrivate
 	WolfPad wolfpad;
 	Input input;
 	Audio audio;
+
+	WiiRemoteMgr wiiRemote;
 
 	GLState _glState;
 
@@ -162,6 +166,7 @@ struct SharedStatePrivate
 
 	~SharedStatePrivate()
 	{
+		wiiRemote.shutdown();
 		TEX::del(globalTex);
 		TEXFBO::fini(gpTexFBO);
 		TEXFBO::fini(atlasTex);
@@ -238,6 +243,12 @@ GSATT(TexPool&, texPool)
 GSATT(Quad&, gpQuad)
 GSATT(SharedFontState&, fontState)
 GSATT(SharedMidiState&, midiState)
+
+
+int SharedState::wiiRemoteSteps() const 
+{
+	return p->wiiRemote.get_and_reset_steps();
+}
 
 void SharedState::setBindingData(void *data)
 {

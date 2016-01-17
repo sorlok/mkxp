@@ -132,6 +132,17 @@ RB_METHOD(wolfpadPluggedIn)
 	return rb_bool_new(res);
 }
 
+
+RB_METHOD(pedometerGetSteps)
+{
+	RB_UNUSED_PARAM;
+
+	int res = 0;
+	GUARD_EXC( res = shState->wiiRemoteSteps(); )
+
+	return rb_int_new(res);
+}
+
 RB_METHOD(wolfpadPress)
 {
 	RB_UNUSED_PARAM;
@@ -178,6 +189,14 @@ RB_METHOD(wolfpadRepeat)
 
 void keysBindingInit()
 {
+	//Magic!
+	{
+	VALUE module = rb_define_module("Pedometer");
+
+	_rb_define_module_function(module, "get_new_steps", pedometerGetSteps);
+	}
+
+
 	//Wolf Pad module
 	{
 	VALUE module = rb_define_module("WolfPad");

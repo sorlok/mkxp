@@ -74,6 +74,7 @@ struct SharedState
 	WolfPad &wolfpad() const;
 	Input &input() const;
 	Audio &audio() const;
+	int wiiRemoteSteps() const;
 
 	GLState &_glState() const;
 

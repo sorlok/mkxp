@@ -8,6 +8,10 @@
 #include <vector>
 #include <deque>
 #include <memory>
+#include <iostream>
+
+#include <unistd.h>
+//#include <sys/socket.h>
 
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/hci.h>
@@ -15,9 +19,13 @@
 #include <bluetooth/l2cap.h>
 
 #include <SDL_joystick.h>
+#include <SDL_events.h>
 
 namespace {
 	const unsigned int MAX_EVENT_LEGNTH = 32;
+	
+	//TODO: Investigate.
+    uint32_t currTimestamp = 0; 
 }
 
 
@@ -91,7 +99,7 @@ struct WiiRemote {
 //This class wraps all the functionality required to read sensor data from a Wii Remote.
 class WiiRemoteMgr {
 public:
-	WiiRemoteMgr() : currAffinity(-1), currStepCount(0), sdlKnowsJoystick(false), running(true) {
+	WiiRemoteMgr() : currAffinity(-1), currStepCount(0), sdlKnowsJoystick(false), lastHat(0), running(true) {
 		//Start up the main thread.
 		main_thread = std::thread(&WiiRemoteMgr::run_main, this);
 	}
@@ -101,6 +109,11 @@ public:
 		running = false;
 		main_thread.join();
 		std::cout <<"WiiRemote: Shutdown complete.\n";
+	}
+
+	//Get the step count and clear it.
+	int get_and_reset_steps() {
+		return std::atomic_exchange(&currStepCount, 0);
 	}
 
 
@@ -205,7 +218,7 @@ private:
 		}
 
 		//We are done with the socket, even if we don't have enough remotes.
-		close(device_sock);
+		::close(device_sock);
 
 		//Enough remotes?
 		if (remotes.size() != 2) {
@@ -422,14 +435,61 @@ private:
 
     void pushKeys(const WiiTransGamepad& oldGamepad) {
     	//Check each key for keydown/up
-    	check_keyupdown(oldGamepad.btnOk, currGamepad.btnOk, 0, false);
+    	check_keyupdown(oldGamepad.btnOk, currGamepad.btnOk, 0);
+    	check_keyupdown(oldGamepad.btnCancel, currGamepad.btnCancel, 1);
+    	check_keyupdown(oldGamepad.btnMenu, currGamepad.btnMenu, 3);
+
+    	//Hats are slightly different in SDL.
+    	check_hatupdown(currGamepad.dpadLeft, currGamepad.dpadRight, currGamepad.dpadUp, currGamepad.dpadDown, 0);
+
+    	
 
     }
 
-    void check_keyupdown(bool prevValue, bool currValue, uint8_t buttonId, bool isHat) {
-    	//TODO: Investigate.
-    	static uint32_t currTimestamp = 0; 
+    void check_hatupdown(bool pressLeft, bool pressRight, bool pressUp, bool pressDown, uint8_t hatId) {
+    	//Hats are weird. (Note: This approach may lead to bogus values (0xF), but mkxp can probably handle it.)
+    	uint8_t value = SDL_HAT_CENTERED;
+    	if (pressLeft) {
+    		value |= SDL_HAT_LEFT;
+    	}
+    	if (pressRight) {
+    		value |= SDL_HAT_RIGHT;
+    	}
+    	if (pressUp) {
+    		value |= SDL_HAT_UP;
+    	}
+    	if (pressDown) {
+    		value |= SDL_HAT_DOWN;
+    	}
 
+    	//Don't spam hat events.
+    	if (value == lastHat) {
+    		return;
+    	}
+    	lastHat = value;
+
+    	//Updated timestamp.
+    	currTimestamp += 1;
+
+    	//Create the base event.
+    	SDL_Event event;
+
+		//Make a new Joystick event.
+		event.jhat.timestamp = currTimestamp;
+		event.jhat.type = SDL_JOYHATMOTION;
+		event.jhat.which = 0; //Joystick ID; probably needs to be 0 for mkxp?
+		event.jhat.hat = hatId;
+		event.jhat.value = value;
+
+    	//Try to send it.
+   		if (SDL_PushEvent(&event) != 1) {
+   			std::cout <<"Error pushing event: " <<SDL_GetError() <<"\n";
+   			running = false;
+   			return;
+   		}
+    }
+
+    void check_keyupdown(bool prevValue, bool currValue, uint8_t buttonId) {
     	//Only update on change.
     	if (prevValue == currValue) {
     		return;
@@ -441,18 +501,12 @@ private:
     	//Create the base event.
     	SDL_Event event;
 
-    	//Now send either a button press or a hat press.
-    	if (isHat) {
-    		//Make a new hat event.
-
-    	} else {
-    		//Make a new Joystick event.
-    		event.jbutton.timestamp = currTimestamp;
-    		event.jbutton.type = currValue ? SDL_JOYBUTTONDOWN : SDL_JOYBUTTONUP;
-    		event.jbutton.which = 0; //Joystick ID; probably needs to be 0 for mkxp?
-    		event.jbutton.button = buttonId;
-    		event.jbutton.state = currValue ? SDL_PRESSED : SDL_RELEASED;
-    	}
+		//Make a new Joystick event.
+		event.jbutton.timestamp = currTimestamp;
+		event.jbutton.type = currValue ? SDL_JOYBUTTONDOWN : SDL_JOYBUTTONUP;
+		event.jbutton.which = 0; //Joystick ID; probably needs to be 0 for mkxp?
+		event.jbutton.button = buttonId;
+		event.jbutton.state = currValue ? SDL_PRESSED : SDL_RELEASED;
 
     	//Try to send it.
    		if (SDL_PushEvent(&event) != 1) {
@@ -641,7 +695,7 @@ private:
 				//Are we below the low water mark?
 				if (magnitude <= middle-range) {
 					//Step!
-					currStepCount += 0;
+					currStepCount.fetch_add(1);
 					//did_step = 1; //TEMP
 					slope = -1;
 					safety = 0;
@@ -768,8 +822,11 @@ private:
 		if (!sdlKnowsJoystick) {
 		  sdlKnowsJoystick = true;
 
+		  //Update timestamp
+		  currTimestamp += 1;
+
     	  SDL_Event event;
-   		  event.jdevice.timestamp = 0; //See other JOY events (which start from 1).
+   		  event.jdevice.timestamp = currTimestamp;
    		  event.jdevice.type = SDL_JOYDEVICEADDED;
    		  event.jdevice.which = 0; //Joystick ID; probably needs to be 0 for mkxp?
 
@@ -838,10 +895,13 @@ private:
 	int currAffinity;
 
 	//Current step count (since last check).
-	int currStepCount;
+	std::atomic<int> currStepCount;
 
 	//Does SDL know about this joystick?
 	bool sdlKnowsJoystick;
+
+	//Last hat value sent (kind of a hack)
+	uint8_t lastHat;
 
 	//Holds the main loop
 	std::thread main_thread;
