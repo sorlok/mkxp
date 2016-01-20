@@ -269,7 +269,7 @@ public:
 		}
 
 		//Try to initialize steam.
-		if (SteamAPI_Init()) {
+		if (false) { //NOPE
 			get_logfile() << "Steam API initialized." << std::endl;
 		} else {
 			get_logfile() << "Steam API failed to initialize for some reason..." << std::endl;
