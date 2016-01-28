@@ -141,6 +141,8 @@ cp -r $ORIGRES/swapxt $APPNAME/Contents/Resources/
 cp -r $ORIGRES/*README* $APPNAME/Contents/Resources/
 cp -r $ORIGRES/ld_icon.icns $APPNAME/Contents/Resources/
 cp -r $ORIGRES/mkxp.conf $APPNAME/Contents/Resources/
+cp -r $ORIGRES/ld1_troops.legacy $APPNAME/Contents/Resources/
+
 
 
 #Remove Mercurial stuff
@@ -179,7 +181,6 @@ for lib in "${copied_libs[@]}"; do
     otool -L $lib | tail -n +3  | grep -e "/opt/local/lib" -e "/usr/local/lib"
   fi
 
-  fi
 
   #Sanity check 2
   otool -l $lib  | grep -A2 MIN_MACOSX | tail -n1 | grep 10.[^7]
