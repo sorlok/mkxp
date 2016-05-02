@@ -678,7 +678,7 @@ target_link_libraries(${PROJECT_NAME}
 
 	${PLATFORM_LIBRARIES}
         ${RUBY_STATIC_LIB}
-	"bluetooth"
+	${BLUETOOTH_LIBRARY}
 )
 
 
