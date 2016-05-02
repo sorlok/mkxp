@@ -78,6 +78,8 @@ struct DataRequest {
 struct WiiRemote {
 	WiiRemote(bdaddr_t bdaddr) : bdaddr(bdaddr), sock(-1), ctrl_sock(-1), handshake_calib(false), waitingOnData(false), id(-1), lastStatus(0) {}
 	bdaddr_t bdaddr;  //Bluetooth address; i.e.,: 2C:10:C1:C2:D6:5E
+	std::string bdaddr_str; //String version of the above
+
 	int sock;         //Data channel ("in_socket")
 	int ctrl_sock;    //Control channel ("out_socket") (needed?)
 
@@ -212,17 +214,22 @@ private:
 
 		//Now check if these are actually Wii Remotes.
 		for (int i=0; i<num_devices; ++i) {
+			//Identify false positives.
+			std::cout <<"Found: " <<int(info[i].dev_class[0]) <<" : " <<int(info[i].dev_class[1]) <<" : " <<int(info[i].dev_class[2]) <<"\n";
+
 			//Check the device IDs.
-			if ((info[i].dev_class[0] == 0x08) && (info[i].dev_class[1] == 0x05) && (info[i].dev_class[2] == 0x00)) {
+			bool pass1 = (info[i].dev_class[0] == 0x08) && (info[i].dev_class[1] == 0x05) && (info[i].dev_class[2] == 0x00); //Old Wii Remote/Plus
+			bool pass2 = (info[i].dev_class[0] == 0x04) && (info[i].dev_class[1] == 0x25) && (info[i].dev_class[2] == 0x00); //New Wii Remote/Plus
+			if (pass1 || pass2) {
 				//Found
 				std::shared_ptr<WiiRemote> remote(new WiiRemote(info[i].bdaddr));
 				remote->id = remotes.size();
 				remotes.push_back(remote);
 
-
 				char bdaddr_str[18]; //TODO: Make safer.
 				ba2str(&remote->bdaddr, bdaddr_str);
-				std::cout <<"Found Wii remote: " <<bdaddr_str <<"\n";
+				remote->bdaddr_str = bdaddr_str;
+				std::cout <<"Found Wii remote: " <<remote->bdaddr_str <<"\n";
 			}
 		}
 
@@ -289,11 +296,11 @@ private:
 	bool handshake_calib(WiiRemote& remote) {
 		std::cout <<"Starting handshake (calibration) for Wii Remote\n";
 
+		//Set a good starting mode for data reporting. (NOTE: Putting this after LEDs can cause some error messages)
+		send_data_reporting(remote, true, 0x30);
+
 		//We start with an LED change request.
 		send_leds(remote, true, true, true, true);
-
-		//Then set a good starting mode for data reporting.
-		send_data_reporting(remote, true, 0x30);
 
 		//Send a request for data.
 		send_status_request(remote);
@@ -531,6 +538,8 @@ private:
 	//TODO: We should check that we actually read the correct amount of data.
 	////////////////////////
 	void handle_event(WiiRemote& remote, unsigned char eventType, unsigned char* message) {
+//std::cout <<"From remote: " <<remote.bdaddr_str <<" got event: " <<std::hex <<int(eventType) <<"\n";
+
 		switch (eventType) {
 			//Status response
 			case 0x20: {
@@ -550,6 +559,21 @@ private:
 
 				//Now handle the rest of the data.
 				process_read_data(remote, message+2);
+
+				//Finally, re-send data reporting mode (some 3rd-party remotes can flake out here)
+				send_data_reporting(remote, true, 0x35);
+				break;
+			}
+
+			//Error
+			case 0x22: {
+				//The host is telling us something is wrong.
+				std::cout <<"Manual 0x22 error (" <<int(message[3]) << ") on report: " <<int(message[2]) <<"\n";
+				if (int(message[3]) != 0) {
+				  //Seems like "ok" is sometimes sent?????
+				  running = false;
+				  return;
+				}
 				break;
 			}
 
@@ -559,6 +583,13 @@ private:
 				proccess_buttons(remote, message);
 				break;
 			}
+
+			//Basic buttons plus 19 extension bytes.
+			/*case 0x34: {
+				proccess_buttons(remote, message);
+				//proccess_accellerometer(remote, message+2);
+				break;
+			}*/
 
 			//Basic buttons plus accelerometer plus 16 extension bytes.
 			case 0x35: {
@@ -764,6 +795,8 @@ private:
 		//Extension connected.
 		bool extensionConnected = data[0]&0x02;
 
+		//std::cout <<"Remote: " <<remote.bdaddr_str <<" status; extension: " <<extensionConnected <<"\n";
+
 		//Speaker status (0x04) 
 		//Don't care.
 
@@ -882,15 +915,16 @@ private:
 		buffer[1] = reportType;
 		memcpy(buffer+2, message, length);
 
+
+//std::cout <<"SEND to remote: " <<remote.bdaddr_str <<" data: [";
+
 		//TEMP
-		/*
-		std::cout <<"sending: [";
+/*		std::cout <<"sending: [";
 		for (size_t i=0; i<length+2; i++) {
 			if (i!=0) {std::cout <<",";}
 			printf("0x%x", buffer[i]);
 		}
-		std::cout <<"]\n";
-		*/
+		std::cout <<"]\n";*/
 		//END_TEMP
 
 		//Make sure to disable rumble (really!)
