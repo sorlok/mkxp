@@ -28,6 +28,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#include <SDL_syswm.h> 
 #endif
 
 
@@ -190,56 +191,66 @@ RB_METHOD(spiWorkAreaRect)
 	return wrapObject(r, RectType);
 }
 
-RB_METHOD(smCxMaximized)
-{
-	RB_UNUSED_PARAM;
 
-	int res = 0;
+RB_METHOD(spiParentRect)
+{
+        RB_UNUSED_PARAM;
+
+        IntRect rect;
 #ifdef _WIN32
-	//GetSystemMetrics() returns 0 on error, so we are consistent.
-	GUARD_EXC( res = GetSystemMetrics(SM_CXMAXIMIZED); );
+	SDL_SysWMinfo wmInfo;
+	SDL_VERSION(&wmInfo.version);
+	RECT res;
+	BOOL resVal = 0;
+	if (SDL_GetWindowWMInfo(shState->sdlWindow(), &wmInfo) == SDL_TRUE) {
+		if (wmInfo.subsystem == SDL_SYSWM_WINDOWS) {
+			RECT res;
+			GUARD_EXC( resVal = GetWindowRect(wmInfo.info.win.window, &res); );
+		}
+	}
+
+        if ( resVal != 0) {
+                rect.x = res.left;
+                rect.y = res.top;
+                rect.w = res.right-res.left;
+                rect.h = res.bottom-res.top;
+        }
 #endif
 
-	return rb_fix_new(res);
+        Rect *r = new Rect(rect);
+
+        return wrapObject(r, RectType);
 }
 
-RB_METHOD(smCxMaxTrack)
-{
-	RB_UNUSED_PARAM;
 
-	int res = 0;
+RB_METHOD(spiChildRect)
+{
+        RB_UNUSED_PARAM;
+
+        IntRect rect;
 #ifdef _WIN32
-	//GetSystemMetrics() returns 0 on error, so we are consistent.
-	GUARD_EXC( res = GetSystemMetrics(SM_CXMAXTRACK); );
+        SDL_SysWMinfo wmInfo;
+        SDL_VERSION(&wmInfo.version);
+        RECT res;
+        BOOL resVal = 0;
+        if (SDL_GetWindowWMInfo(shState->sdlWindow(), &wmInfo) == SDL_TRUE) {
+                if (wmInfo.subsystem == SDL_SYSWM_WINDOWS) {
+                        RECT res;
+                        GUARD_EXC( resVal = GetClientRect(wmInfo.info.win.window, &res); );
+                }
+        }
+
+        if ( resVal != 0) {
+                rect.x = res.left;
+                rect.y = res.top;
+                rect.w = res.right-res.left;
+                rect.h = res.bottom-res.top;
+        }
 #endif
 
-	return rb_fix_new(res);
-}
+        Rect *r = new Rect(rect);
 
-RB_METHOD(smCyMaximized)
-{
-	RB_UNUSED_PARAM;
-
-	int res = 0;
-#ifdef _WIN32
-	//GetSystemMetrics() returns 0 on error, so we are consistent.
-	GUARD_EXC( res = GetSystemMetrics(SM_CYMAXIMIZED); );
-#endif
-
-	return rb_fix_new(res);
-}
-
-RB_METHOD(smCyMaxTrack)
-{
-	RB_UNUSED_PARAM;
-
-	int res = 0;
-#ifdef _WIN32
-	//GetSystemMetrics() returns 0 on error, so we are consistent.
-	GUARD_EXC( res = GetSystemMetrics(SM_CYMAXTRACK); );
-#endif
-
-	return rb_fix_new(res);
+        return wrapObject(r, RectType);
 }
 
 
@@ -346,9 +357,7 @@ void graphicsBindingInit()
 
 	//Additional, potentially useful properties. Returns 1 on systems that don't support them.
 	_rb_define_module_function(module, "spi_workarea_rect", spiWorkAreaRect);
-	_rb_define_module_function(module, "sm_cx_maximized", smCxMaximized);
-	_rb_define_module_function(module, "sm_cx_maxtrack", smCxMaxTrack);
-	_rb_define_module_function(module, "sm_cy_maximized", smCyMaximized);
-	_rb_define_module_function(module, "sm_cy_maxtrack", smCyMaxTrack);
+	_rb_define_module_function(module, "get_w32_parent_rect", spiParentRect);
+	_rb_define_module_function(module, "get_w32_child_rect", spiChildRect);
 
 }
