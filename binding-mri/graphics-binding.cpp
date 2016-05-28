@@ -20,10 +20,16 @@
 */
 
 #include "graphics.h"
+#include "etc.h"
 #include "sharedstate.h"
 #include "binding-util.h"
 #include "binding-types.h"
 #include "exception.h"
+
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
 
 RB_METHOD(graphicsUpdate)
 {
@@ -161,6 +167,83 @@ RB_METHOD(graphicsFadein)
 	return Qnil;
 }
 
+
+RB_METHOD(spiWorkAreaRect)
+{
+	RB_UNUSED_PARAM;
+
+	IntRect rect;
+#ifdef _WIN32
+	RECT res;
+	BOOL resVal = 0;
+	GUARD_EXC( resVal = SystemParametersInfo(SPI_GETWORKAREA, 0, &res, 0); );
+	if ( resVal != 0) {
+		rect.x = res.left;
+		rect.y = res.top;
+		rect.w = res.right-res.left;
+		rect.h = res.bottom-res.top;
+	}
+#endif
+
+	Rect *r = new Rect(rect);
+
+	return wrapObject(r, RectType);
+}
+
+RB_METHOD(smCxMaximized)
+{
+	RB_UNUSED_PARAM;
+
+	int res = 0;
+#ifdef _WIN32
+	//GetSystemMetrics() returns 0 on error, so we are consistent.
+	GUARD_EXC( res = GetSystemMetrics(SM_CXMAXIMIZED); );
+#endif
+
+	return rb_fix_new(res);
+}
+
+RB_METHOD(smCxMaxTrack)
+{
+	RB_UNUSED_PARAM;
+
+	int res = 0;
+#ifdef _WIN32
+	//GetSystemMetrics() returns 0 on error, so we are consistent.
+	GUARD_EXC( res = GetSystemMetrics(SM_CXMAXTRACK); );
+#endif
+
+	return rb_fix_new(res);
+}
+
+RB_METHOD(smCyMaximized)
+{
+	RB_UNUSED_PARAM;
+
+	int res = 0;
+#ifdef _WIN32
+	//GetSystemMetrics() returns 0 on error, so we are consistent.
+	GUARD_EXC( res = GetSystemMetrics(SM_CYMAXIMIZED); );
+#endif
+
+	return rb_fix_new(res);
+}
+
+RB_METHOD(smCyMaxTrack)
+{
+	RB_UNUSED_PARAM;
+
+	int res = 0;
+#ifdef _WIN32
+	//GetSystemMetrics() returns 0 on error, so we are consistent.
+	GUARD_EXC( res = GetSystemMetrics(SM_CYMAXTRACK); );
+#endif
+
+	return rb_fix_new(res);
+}
+
+
+
 void bitmapInitProps(Bitmap *b, VALUE self);
 
 RB_METHOD(graphicsSnapToBitmap)
@@ -260,4 +343,12 @@ void graphicsBindingInit()
 
 	INIT_GRA_PROP_BIND( DisplayWidth, "display_width"  );
 	INIT_GRA_PROP_BIND( DisplayHeight, "display_height"  );
+
+	//Additional, potentially useful properties. Returns 1 on systems that don't support them.
+	_rb_define_module_function(module, "spi_workarea_rect", spiWorkAreaRect);
+	_rb_define_module_function(module, "sm_cx_maximized", smCxMaximized);
+	_rb_define_module_function(module, "sm_cx_maxtrack", smCxMaxTrack);
+	_rb_define_module_function(module, "sm_cy_maximized", smCyMaximized);
+	_rb_define_module_function(module, "sm_cy_maxtrack", smCyMaxTrack);
+
 }
