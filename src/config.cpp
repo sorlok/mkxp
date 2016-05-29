@@ -428,7 +428,7 @@ void Config::readGameINI()
 	if (scaleVal==0) {
 		//See if this does anything.
 		int stX=0; int stY=0;
-		int defW=0; int defH=0;
+		int defW=this->defScreenW; int defH=this->defScreenH;
 		calc_win32_sizing(stX, stY, defW, defH);
 		if (!(stX==0 && stY==0)) {
 			this->defScreenX = stX;
