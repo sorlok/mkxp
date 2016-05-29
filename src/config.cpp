@@ -36,6 +36,7 @@
 #include "util.h"
 #include "sdl-util.h"
 #include "filesystem.h"
+#include "eventthread.h"
 
 #ifdef INI_ENCODING
 extern "C" {
@@ -419,19 +420,34 @@ void Config::readGameINI()
 		scaleVal = 0;
 	}
 
+	//Our default pos.
+	this->defScreenX = SDL_WINDOWPOS_UNDEFINED;
+	this->defScreenY = SDL_WINDOWPOS_UNDEFINED;
+
 	//Special case: "0" means "scale to display size"
 	if (scaleVal==0) {
-		//Cheating a bit...
-		SDL_DisplayMode mode;
-		SDL_GetDisplayMode(0, 0, &mode);
-
-		//Scale it in the right direction.
-		if (mode.w*this->defScreenH/this->defScreenW > mode.h) {
-			this->defScreenW = mode.h*this->defScreenW/this->defScreenH;
-			this->defScreenH = mode.h;
+		//See if this does anything.
+		int stX=0; int stY=0;
+		int defW=0; int defH=0;
+		calc_win32_sizing(stX, stY, defW, defH);
+		if (!(stX==0 && stY==0)) {
+			this->defScreenX = stX;
+			this->defScreenY = stY;
+			this->defScreenW = defW;
+			this->defScreenH = defH;
 		} else {
-			this->defScreenW = mode.w;
-			this->defScreenH = mode.w*this->defScreenH/this->defScreenW;
+			//For Linux, OS-X, we'll just have to guess for now.
+			SDL_DisplayMode mode;
+			SDL_GetDisplayMode(0, 0, &mode);
+
+			//Scale it in the right direction.
+			if (mode.w*this->defScreenH/this->defScreenW > mode.h) {
+				this->defScreenW = mode.h*this->defScreenW/this->defScreenH;
+				this->defScreenH = mode.h;
+			} else {
+				this->defScreenW = mode.w;
+				this->defScreenH = mode.w*this->defScreenH/this->defScreenW;
+			}
 		}
 	} else {
 		this->defScreenW *= scaleVal;

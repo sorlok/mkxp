@@ -28,6 +28,13 @@
 #include <SDL_thread.h>
 #include <SDL_touch.h>
 
+#ifdef _WIN32
+#include "filesystem.h"
+#include <sstream>
+#include <windows.h>
+#include <SDL_syswm.h> 
+#endif
+
 #include <al.h>
 #include <alc.h>
 #include <alext.h>
@@ -87,6 +94,8 @@ enum
 
 	UPDATE_FPS,
 
+	FORCE_CHECK_BORDERS,
+
 	EVENT_COUNT
 };
 
@@ -106,6 +115,116 @@ EventThread::EventThread()
     : fullscreen(false),
       showCursor(false)
 {}
+
+//Helper consts
+namespace {
+  const std::string BorderIniFile = "./Game.ini";
+  const std::string BorderSection = "BorderGuess";
+  const std::string BorderKeyLeft = "LeftPadBorder";
+  const std::string BorderKeyRight = "RightPadBorder";
+  const std::string BorderKeyTop = "TopPadBorder";
+  const std::string BorderKeyBottom = "BottomPadBorder";
+}
+
+//Do some Win32 magic; produce the x,y,w,h needed to "maximize" a window.
+void calc_win32_sizing(int& x, int& y, Sint32& width, Sint32&height)
+{
+#ifdef _WIN32
+	//First, get the workable area (this excludes the toolbar).
+	RECT spiWorkArea;
+	if ( SystemParametersInfo(SPI_GETWORKAREA, 0, &spiWorkArea, 0) != 0) {
+		//Save the ratio
+		float ratio = height/float(width);
+
+		//Initial position, size estimate.
+		width = spiWorkArea.right-spiWorkArea.left;
+		height = spiWorkArea.bottom-spiWorkArea.top;
+
+		//Now, account for the border.
+		std::string padLeft = GetPPString(BorderSection, BorderKeyLeft, "", BorderIniFile);
+		std::string padRight = GetPPString(BorderSection, BorderKeyRight, "", BorderIniFile);
+		std::string padTop  = GetPPString(BorderSection, BorderKeyTop, "", BorderIniFile);
+		std::string padBottom  = GetPPString(BorderSection, BorderKeyBottom, "", BorderIniFile);
+		int pLeft = 0;
+		int pTop = 0;
+		if (!(padLeft.empty() || padRight.empty() || padTop.empty() || padBottom.empty())) {
+			//Covnert
+			{std::stringstream in(padLeft); in>>pLeft;}
+			int pRight = 0;
+			{std::stringstream in(padRight); in>>pRight;}
+			{std::stringstream in(padTop); in>>pTop;}
+			int pBottom = 0;
+			{std::stringstream in(padBottom); in>>pBottom;}
+
+			//Now adjust the initial size estimate.
+			width -= (pLeft+pRight);
+			height -= (pTop+pBottom);
+		}
+
+		//Position is fairly simple; one axis must be centered, and the other must be 0 (parent)
+		x = pLeft+spiWorkArea.left;
+		y = SDL_WINDOWPOS_CENTERED;
+
+		//Finally, keep the size "to scale".
+		int w = width;
+		int h = int(width * ratio);
+		if (h > height) {
+			h = height;
+			w = int(height * (1/ratio));
+			x = SDL_WINDOWPOS_CENTERED;
+			y = pTop+spiWorkArea.top;
+		}
+		width = w;
+		height = h;
+	}
+#endif
+}
+
+
+
+void update_win32_parent_child(SDL_Window* window)
+{
+#ifdef _WIN32
+	SDL_SysWMinfo wmInfo;
+	SDL_VERSION(&wmInfo.version);
+	if (SDL_GetWindowWMInfo(window, &wmInfo) == SDL_TRUE) {
+		if (wmInfo.subsystem == SDL_SYSWM_WINDOWS) {
+			HWND win = wmInfo.info.win.window;
+			RECT parent;
+			if (GetWindowRect(win, &parent) != 0) {
+				RECT child;
+				if (GetClientRect(win, &child) != 0) {
+					//We can compute the full h/v border.
+					int hBorder = (parent.right - parent.left) - child.right;
+					int vBorder = (parent.bottom - parent.top) - child.bottom;
+
+					//To fully separate the caption bar from the client area, we need to know where (0,0) of the client area lands.
+					POINT pos;
+					pos.x = 0;
+					pos.y = 0;
+					if (ClientToScreen(win, &pos) != 0) {
+						//Convert
+						int pLeft = pos.x - parent.left;
+						int pRight = hBorder - pLeft;
+						int pTop = pos.y - parent.top;
+						int pBottom = vBorder - pTop;
+
+						//Save
+						{ std::stringstream msg; msg <<pLeft;
+						  WritePPString(BorderSection, BorderKeyLeft, msg.str(), BorderIniFile); }
+						{ std::stringstream msg; msg <<pRight;
+						  WritePPString(BorderSection, BorderKeyRight, msg.str(), BorderIniFile); }
+						{ std::stringstream msg; msg <<pTop;
+						  WritePPString(BorderSection, BorderKeyTop, msg.str(), BorderIniFile); }
+						{ std::stringstream msg; msg <<pBottom;
+						  WritePPString(BorderSection, BorderKeyBottom, msg.str(), BorderIniFile); }
+					}
+				}
+			}
+		}
+	}
+#endif
+}
 
 void EventThread::process(RGSSThreadData &rtData)
 {
@@ -202,6 +321,11 @@ void EventThread::process(RGSSThreadData &rtData)
 			case SDL_WINDOWEVENT_SIZE_CHANGED :
 				winW = event.window.data1;
 				winH = event.window.data2;
+
+				//Update Win32 parent/child sizes
+				if (!fullscreen) {
+					update_win32_parent_child(win);
+				}
 
 				windowSizeMsg.post(Vec2i(winW, winH));
 				resetInputStates();
@@ -402,11 +526,32 @@ void EventThread::process(RGSSThreadData &rtData)
 				break;
 
 			case REQUEST_WINRESIZE :
-				SDL_SetWindowSize(win, event.window.data1, event.window.data2);
-				break;
+			{
+				//If we are given negative sizes, we must make the largest window possible, accounting for toolbars and borders.
+				Sint32 width = event.window.data1;
+				Sint32 height = event.window.data2;
+				if (width != 0 && height != 0) {
+					if (width < 0 && height < 0) {
+						//We need to do a bit more math.
+						int x = 0;
+						int y = 0;
+						calc_win32_sizing(x, y, width, height);
 
+						//Safety when called on Linux
+						if (width >= 0 && height >= 0) {
+							SDL_SetWindowSize(win, width, height);
+							requestWindowCenterRaise(x, y);
+							break;
+						}
+					}
+					//Standard request
+					SDL_SetWindowSize(win, width, height);
+					requestWindowCenterRaise(SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+				}
+				break;
+			}
 			case REQUEST_WINCENTERRAISE:
-				SDL_SetWindowPosition(win, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+				SDL_SetWindowPosition(win, event.window.data1, event.window.data2);
 				SDL_RaiseWindow(win);
 				break;
 
@@ -444,6 +589,13 @@ void EventThread::process(RGSSThreadData &rtData)
 				}
 
 				SDL_SetWindowTitle(win, buffer);
+				break;
+
+			case FORCE_CHECK_BORDERS :
+				//Update Win32 parent/child sizes
+				if (!fullscreen) {
+					update_win32_parent_child(win);
+				}
 				break;
 			}
 		}
@@ -575,10 +727,12 @@ void EventThread::requestWindowResize(int width, int height)
 	SDL_PushEvent(&event);
 }
 
-void EventThread::requestWindowCenterRaise()
+void EventThread::requestWindowCenterRaise(int x, int y)
 {
 	SDL_Event event;
 	event.type = usrIdStart + REQUEST_WINCENTERRAISE;
+	event.window.data1 = x;
+	event.window.data2 = y;
 	SDL_PushEvent(&event);
 }
 
@@ -587,6 +741,14 @@ void EventThread::requestShowCursor(bool mode)
 	SDL_Event event;
 	event.type = usrIdStart + REQUEST_SETCURSORVISIBLE;
 	event.user.code = mode;
+	SDL_PushEvent(&event);
+}
+
+
+void EventThread::forceCheckBorders()
+{
+	SDL_Event event;
+	event.type = usrIdStart + FORCE_CHECK_BORDERS;
 	SDL_PushEvent(&event);
 }
 

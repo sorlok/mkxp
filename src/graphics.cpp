@@ -831,7 +831,12 @@ void Graphics::centerResizeRaise(int w, int h)
 {
 	std::cout <<"MKXP: Center/resize/raise: " <<w <<"," <<h <<"\n";
 	p->threadData->ethread->requestWindowResize(w, h);
-	p->threadData->ethread->requestWindowCenterRaise();
+	//p->threadData->ethread->requestWindowCenterRaise(); //Resize will do this
+}
+
+void Graphics::forceCheckBorders()
+{
+	p->threadData->ethread->forceCheckBorders();
 }
 
 static void guardDisposed() {}
@@ -1017,7 +1022,7 @@ void Graphics::setFullscreen(bool value)
 {
 	std::cout <<"MKXP: Setting to fullscreen: " <<value <<"\n";
 	p->threadData->ethread->requestFullscreenMode(value);
-	p->threadData->ethread->requestWindowCenterRaise();
+	p->threadData->ethread->requestWindowCenterRaise(SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 }
 
 int Graphics::getDisplayWidth() const

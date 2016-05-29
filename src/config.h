@@ -38,6 +38,8 @@ struct Config
 	bool smoothScaling;
 	bool vsync;
 
+	int defScreenX;
+	int defScreenY;
 	int defScreenW;
 	int defScreenH;
 

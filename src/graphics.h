@@ -23,6 +23,7 @@
 #define GRAPHICS_H
 
 #include "util.h"
+#include "etc.h"
 
 class Scene;
 class Bitmap;
@@ -42,6 +43,7 @@ public:
 	void frameReset();
 
         void centerResizeRaise(int w, int h);
+	void forceCheckBorders();
 
 	DECL_ATTR( FrameRate,  int )
 	DECL_ATTR( FrameCount, int )

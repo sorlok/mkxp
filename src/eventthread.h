@@ -43,6 +43,8 @@ union SDL_Event;
 
 #define MAX_FINGERS 4
 
+void calc_win32_sizing(int& x, int& y, Sint32& width, Sint32&height);
+
 class EventThread
 {
 public:
@@ -88,8 +90,9 @@ public:
 	/* Called from RGSS thread */
 	void requestFullscreenMode(bool mode);
 	void requestWindowResize(int width, int height);
-	void requestWindowCenterRaise();
+	void requestWindowCenterRaise(int x, int y);
 	void requestShowCursor(bool mode);
+	void forceCheckBorders();
 
 	void requestTerminate();
 

@@ -25,11 +25,7 @@
 #include "binding-util.h"
 #include "binding-types.h"
 #include "exception.h"
-
-#ifdef _WIN32
-#include <windows.h>
-#include <SDL_syswm.h> 
-#endif
+#include "eventthread.h"
 
 
 RB_METHOD(graphicsUpdate)
@@ -75,6 +71,15 @@ RB_METHOD(graphicsCenterResizeRaise)
 	rb_get_args(argc, argv, "|ii", &w, &h RB_ARG_END);
 
 	GUARD_EXC( shState->graphics().centerResizeRaise(w, h); )
+
+	return Qnil;
+}
+
+RB_METHOD(forceCheckBorders)
+{
+	RB_UNUSED_PARAM;
+
+	GUARD_EXC( shState->graphics().forceCheckBorders(); )
 
 	return Qnil;
 }
@@ -169,93 +174,8 @@ RB_METHOD(graphicsFadein)
 }
 
 
-RB_METHOD(spiWorkAreaRect)
-{
-	RB_UNUSED_PARAM;
-
-	IntRect rect;
-#ifdef _WIN32
-	RECT res;
-	BOOL resVal = 0;
-	GUARD_EXC( resVal = SystemParametersInfo(SPI_GETWORKAREA, 0, &res, 0); );
-	if ( resVal != 0) {
-		rect.x = res.left;
-		rect.y = res.top;
-		rect.w = res.right-res.left;
-		rect.h = res.bottom-res.top;
-	}
-#endif
-
-	Rect *r = new Rect(rect);
-
-	return wrapObject(r, RectType);
-}
-
-
-RB_METHOD(spiParentRect)
-{
-        RB_UNUSED_PARAM;
-
-        IntRect rect;
-#ifdef _WIN32
-	SDL_SysWMinfo wmInfo;
-	SDL_VERSION(&wmInfo.version);
-	RECT res;
-	BOOL resVal = 0;
-	if (SDL_GetWindowWMInfo(shState->sdlWindow(), &wmInfo) == SDL_TRUE) {
-		if (wmInfo.subsystem == SDL_SYSWM_WINDOWS) {
-			RECT res;
-			GUARD_EXC( resVal = GetWindowRect(wmInfo.info.win.window, &res); );
-		}
-	}
-
-        if ( resVal != 0) {
-                rect.x = res.left;
-                rect.y = res.top;
-                rect.w = res.right-res.left;
-                rect.h = res.bottom-res.top;
-        }
-#endif
-
-        Rect *r = new Rect(rect);
-
-        return wrapObject(r, RectType);
-}
-
-
-RB_METHOD(spiChildRect)
-{
-        RB_UNUSED_PARAM;
-
-        IntRect rect;
-#ifdef _WIN32
-        SDL_SysWMinfo wmInfo;
-        SDL_VERSION(&wmInfo.version);
-        RECT res;
-        BOOL resVal = 0;
-        if (SDL_GetWindowWMInfo(shState->sdlWindow(), &wmInfo) == SDL_TRUE) {
-                if (wmInfo.subsystem == SDL_SYSWM_WINDOWS) {
-                        RECT res;
-                        GUARD_EXC( resVal = GetClientRect(wmInfo.info.win.window, &res); );
-                }
-        }
-
-        if ( resVal != 0) {
-                rect.x = res.left;
-                rect.y = res.top;
-                rect.w = res.right-res.left;
-                rect.h = res.bottom-res.top;
-        }
-#endif
-
-        Rect *r = new Rect(rect);
-
-        return wrapObject(r, RectType);
-}
-
-
-
 void bitmapInitProps(Bitmap *b, VALUE self);
+
 
 RB_METHOD(graphicsSnapToBitmap)
 {
@@ -328,6 +248,7 @@ void graphicsBindingInit()
 	_rb_define_module_function(module, "frame_reset", graphicsFrameReset);
 
 	_rb_define_module_function(module, "center_resize_raise", graphicsCenterResizeRaise);
+	_rb_define_module_function(module, "force_check_borders", forceCheckBorders);
 
 	_rb_define_module_function(module, "__reset__", graphicsReset);
 
@@ -354,10 +275,5 @@ void graphicsBindingInit()
 
 	INIT_GRA_PROP_BIND( DisplayWidth, "display_width"  );
 	INIT_GRA_PROP_BIND( DisplayHeight, "display_height"  );
-
-	//Additional, potentially useful properties. Returns 1 on systems that don't support them.
-	_rb_define_module_function(module, "spi_workarea_rect", spiWorkAreaRect);
-	_rb_define_module_function(module, "get_w32_parent_rect", spiParentRect);
-	_rb_define_module_function(module, "get_w32_child_rect", spiChildRect);
 
 }

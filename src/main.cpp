@@ -261,7 +261,7 @@ int main(int argc, char *argv[])
 		winFlags |= SDL_WINDOW_ALLOW_HIGHDPI;
 
 	win = SDL_CreateWindow(conf.game.title.c_str(),
-	                       SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+	                       conf.defScreenX, conf.defScreenY,
 	                       conf.defScreenW, conf.defScreenH, winFlags);
 
 	if (!win)
