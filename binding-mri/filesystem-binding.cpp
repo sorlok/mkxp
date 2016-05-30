@@ -348,11 +348,11 @@ public:
 				get_logfile() << "Steam API call asked for result of type " <<expectedCbType <<", failed? " <<failed2 << std::endl;
 			}
 			action(this, &result, (failed1 || failed2));
-		}
 
-		//Regardless of whether or not we processed this, that handle is certainly dead now
-		hdl = 0;
-		waitingOnSteam = false;
+			//Regardless of whether or not we processed this, that handle is certainly dead now
+			hdl = 0;
+			waitingOnSteam = false;
+		}
 	}
 
 	//Find and start our next request. Returns:
@@ -531,6 +531,7 @@ public:
 
 		const char* leaderName = getLeaderboardName(pResult->m_hSteamLeaderboard, pResult->m_bLeaderboardFound>0);
 		if (leaderName == NULL) {
+			get_logfile() << "ERROR: Leaderboard name could not be determined from: " << pResult->m_hSteamLeaderboard << "." << std::endl;
 			error = true;
 			return;
 		}
@@ -562,6 +563,7 @@ public:
 
 		const char* leaderName = getLeaderboardName(pResult->m_hSteamLeaderboard, pResult->m_bSuccess);
 		if (leaderName == NULL) {
+			get_logfile() << "ERROR: Leaderboard name could not be determined from: " << pResult->m_hSteamLeaderboard << "." << std::endl;
 			error = true;
 			return;
 		}
