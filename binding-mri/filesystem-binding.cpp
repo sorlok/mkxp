@@ -289,6 +289,8 @@ public:
 		//Cancel callbacks.
 //		steamLeaderboardCallback.Cancel();
 //		steamLeaderboardCallback2.Cancel();
+		findLeaderHdl = 0;
+		uploadLeaderHdl = 0;
 
 		//Now, shut down steam.
 		SteamAPI_Shutdown();
