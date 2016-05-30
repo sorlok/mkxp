@@ -316,9 +316,11 @@ public:
 		return std::cout; //Umm... better than crashing?
 	}
 
+
+
 	//Helper: check an API handle, and react
 	template <class ResultType>
-	void check_api_hdl(SteamAPICall_t& hdl, int expectedCbType, std::function<void(ResultType*,bool)> action) {
+	void check_api_hdl(SteamAPICall_t& hdl, int expectedCbType, void (*action)(MySteamSuperClass*, ResultType*, bool)) {
 		//No handle?
 		if (hdl == 0) {
 			return;
@@ -336,15 +338,21 @@ public:
 		//Check if we're done.
 		bool failed1 = false;
 		if (utils->IsAPICallCompleted(hdl, &failed1)) {
+			get_logfile() << "Steam API call completed; type " <<expectedCbType <<", failed? " <<failed1 << std::endl;
+
 			//We may have failed, but we must still process the update.
 			ResultType result;
 			bool failed2 = false;
 			if (!failed1) {
 				utils->GetAPICallResult(hdl, &result, sizeof(result), expectedCbType, &failed2);
+				get_logfile() << "Steam API call asked for result of type " <<expectedCbType <<", failed? " <<failed2 << std::endl;
 			}
-			action(&result, (failed1 || failed2));
+			action(this, &result, (failed1 || failed2));
 		}
+
+		//Regardless of whether or not we processed this, that handle is certainly dead now
 		hdl = 0;
+		waitingOnSteam = false;
 	}
 
 	//Find and start our next request. Returns:
@@ -361,8 +369,8 @@ public:
 		//SteamAPI_RunCallbacks();
 
 		//Manually pull the latest updates from Steam.
-		check_api_hdl<LeaderboardFindResult_t>(findLeaderHdl, LeaderboardFindResult_t::k_iCallback, std::bind(&MySteamSuperClass::OnFindLeaderboard, this, std::placeholders::_1, std::placeholders::_2));
-		check_api_hdl<LeaderboardScoreUploaded_t>(uploadLeaderHdl, LeaderboardScoreUploaded_t::k_iCallback, std::bind(&MySteamSuperClass::OnSyncLeaderboard, this, std::placeholders::_1, std::placeholders::_2));
+		check_api_hdl<LeaderboardFindResult_t>(findLeaderHdl, LeaderboardFindResult_t::k_iCallback, &MySteamSuperClass::OnFindLeaderboard);
+		check_api_hdl<LeaderboardScoreUploaded_t>(uploadLeaderHdl, LeaderboardScoreUploaded_t::k_iCallback, &MySteamSuperClass::OnSyncLeaderboard);
 
 		//Still waiting for the next request?
 		if (waitingOnSteam) {
@@ -509,7 +517,12 @@ public:
 
 
 	//CALLBACK: Leaderboard found.
-	void OnFindLeaderboard(LeaderboardFindResult_t* pResult, bool bIOFailure) {
+	static void OnFindLeaderboard(MySteamSuperClass* self, LeaderboardFindResult_t* pResult, bool bIOFailure) {
+		self->onFindLeaderboard(pResult, bIOFailure);
+	}
+
+	//Internal version of callback.
+	void onFindLeaderboard(LeaderboardFindResult_t* pResult, bool bIOFailure) {
 		if (bIOFailure) {
 			get_logfile() << "ERROR: Leaderboard callback returned an I/O error." << std::endl;
 			error = true;
@@ -532,11 +545,15 @@ public:
 		//Ok, save it.
 		leaderboards[leaderName] = pResult->m_hSteamLeaderboard;
 		get_logfile() << "Leaderboard found \"" << leaderName << "\"" << std::endl;
-		waitingOnSteam = false;
 	}
 
 	//CALLBACK: Leaderboard synced.
-	void OnSyncLeaderboard(LeaderboardScoreUploaded_t* pResult, bool bIOFailure) {
+	static void OnSyncLeaderboard(MySteamSuperClass* self, LeaderboardScoreUploaded_t* pResult, bool bIOFailure) {
+		self->onSyncLeaderboard(pResult, bIOFailure);
+	}
+
+	//Internal version of callback
+	void onSyncLeaderboard(LeaderboardScoreUploaded_t* pResult, bool bIOFailure) {
 		if (bIOFailure) {
 			get_logfile() << "ERROR: Leaderboard callback returned an I/O error." << std::endl;
 			error = true;
@@ -559,7 +576,6 @@ public:
 		//Done, stop waiting.
 		leaderSyncingName = "";
 		get_logfile() << "Leaderboard synced \"" << leaderName << "\"" << std::endl;
-		waitingOnSteam = false;
 	}
 
 
