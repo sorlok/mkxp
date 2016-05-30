@@ -33,6 +33,7 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <functional>
 
 #include "steam_api.h"
 #include "ruby/encoding.h"
@@ -258,7 +259,7 @@ RB_METHOD(ppWriteString)
 //This class holds everything about Steam, and is used as a broker with the Steam API from within RGSS.
 class MySteamSuperClass {
 public:
-	MySteamSuperClass() : waitingOnSteam(false), error(false) {
+	MySteamSuperClass() : waitingOnSteam(false), error(false), findLeaderHdl(0), uploadLeaderHdl(0) {
 	}
 
 	//Initialize.
@@ -286,8 +287,8 @@ public:
 
 	int shutdown() {
 		//Cancel callbacks.
-		steamLeaderboardCallback.Cancel();
-		steamLeaderboardCallback2.Cancel();
+//		steamLeaderboardCallback.Cancel();
+//		steamLeaderboardCallback2.Cancel();
 
 		//Now, shut down steam.
 		SteamAPI_Shutdown();
@@ -313,6 +314,37 @@ public:
 		return std::cout; //Umm... better than crashing?
 	}
 
+	//Helper: check an API handle, and react
+	template <class ResultType>
+	void check_api_hdl(SteamAPICall_t& hdl, int expectedCbType, std::function<void(ResultType*,bool)> action) {
+		//No handle?
+		if (hdl == 0) {
+			return;
+		}
+
+		//Get SteamUtils
+		ISteamUtils* utils = SteamUtils();
+		if (utils == nullptr)  {
+			get_logfile() << "ERROR retrieving SteamUtils object; perhaps you are calling this function when Steam is not active?" << std::endl;
+			error = true;
+			hdl = 0;
+			return;
+		}
+
+		//Check if we're done.
+		bool failed1 = false;
+		if (utils->IsAPICallCompleted(hdl, &failed1)) {
+			//We may have failed, but we must still process the update.
+			ResultType result;
+			bool failed2 = false;
+			if (!failed1) {
+				utils->GetAPICallResult(hdl, &result, sizeof(result), expectedCbType, &failed2);
+			}
+			action(&result, (failed1 || failed2));
+		}
+		hdl = 0;
+	}
+
 	//Find and start our next request. Returns:
 	//  0 == no error, still busy (or still requests to start).
 	//  1 == ERROR, requests will no longer go through.
@@ -324,7 +356,11 @@ public:
 		}
 
 		//Always get the latest state from Steam.
-		SteamAPI_RunCallbacks();
+		//SteamAPI_RunCallbacks();
+
+		//Manually pull the latest updates from Steam.
+		check_api_hdl<LeaderboardFindResult_t>(findLeaderHdl, LeaderboardFindResult_t::k_iCallback, std::bind(&MySteamSuperClass::OnFindLeaderboard, this, std::placeholders::_1, std::placeholders::_2));
+		check_api_hdl<LeaderboardScoreUploaded_t>(uploadLeaderHdl, LeaderboardScoreUploaded_t::k_iCallback, std::bind(&MySteamSuperClass::OnSyncLeaderboard, this, std::placeholders::_1, std::placeholders::_2));
 
 		//Still waiting for the next request?
 		if (waitingOnSteam) {
@@ -336,14 +372,14 @@ public:
 			if (it->second == 0) {
 				//Fire off an async "find" request.
 				get_logfile() << "Next leaderboard to find is: \"" << it->first << "\"" << std::endl;
-				SteamAPICall_t apiHdl = SteamUserStats()->FindLeaderboard(it->first.c_str());
-				if (apiHdl == 0) {
+				findLeaderHdl = SteamUserStats()->FindLeaderboard(it->first.c_str());
+				if (findLeaderHdl == 0) {
 					get_logfile() << "ERROR calling SteamUserStats()->FindLeaderboard() on leaderboard \"" << it->first << "\"" << std::endl;
 					return 1;
 				}
 
 				//Set a handler for it.
-				steamLeaderboardCallback.Set(apiHdl, this, &MySteamSuperClass::OnFindLeaderboard);
+				//steamLeaderboardCallback.Set(findLeaderHdl, this, &MySteamSuperClass::OnFindLeaderboard);
 
 				//Done for now.
 				waitingOnSteam = true;
@@ -367,14 +403,14 @@ public:
 			}
 
 			//Fire off an async "sync" request.
-			SteamAPICall_t apiHdl = SteamUserStats()->UploadLeaderboardScore(leadHdl->second, k_ELeaderboardUploadScoreMethodKeepBest, leaderSyncingValue, NULL, 0);
-			if (apiHdl == 0) {
+			uploadLeaderHdl = SteamUserStats()->UploadLeaderboardScore(leadHdl->second, k_ELeaderboardUploadScoreMethodKeepBest, leaderSyncingValue, NULL, 0);
+			if (uploadLeaderHdl == 0) {
 				get_logfile() << "ERROR calling SteamUserStats()->UploadLeaderboardScore() on leaderboard \"" << leadHdl->first << "\"" << std::endl;
 				return 1;
 			}
 
 			//Set a handler for it.
-			steamLeaderboardCallback2.Set(apiHdl, this, &MySteamSuperClass::OnSyncLeaderboard);
+			//steamLeaderboardCallback2.Set(apiHdl, this, &MySteamSuperClass::OnSyncLeaderboard);
 
 			//Done for now.
 			waitingOnSteam = true;
@@ -472,7 +508,13 @@ public:
 
 	//CALLBACK: Leaderboard found.
 	void OnFindLeaderboard(LeaderboardFindResult_t* pResult, bool bIOFailure) {
-		const char* leaderName = getLeaderboardName(pResult->m_hSteamLeaderboard, pResult->m_bLeaderboardFound>0, bIOFailure);
+		if (bIOFailure) {
+			get_logfile() << "ERROR: Leaderboard callback returned an I/O error." << std::endl;
+			error = true;
+			return;
+		}
+
+		const char* leaderName = getLeaderboardName(pResult->m_hSteamLeaderboard, pResult->m_bLeaderboardFound>0);
 		if (leaderName == NULL) {
 			error = true;
 			return;
@@ -493,7 +535,13 @@ public:
 
 	//CALLBACK: Leaderboard synced.
 	void OnSyncLeaderboard(LeaderboardScoreUploaded_t* pResult, bool bIOFailure) {
-		const char* leaderName = getLeaderboardName(pResult->m_hSteamLeaderboard, pResult->m_bSuccess, bIOFailure);
+		if (bIOFailure) {
+			get_logfile() << "ERROR: Leaderboard callback returned an I/O error." << std::endl;
+			error = true;
+			return;
+		}
+
+		const char* leaderName = getLeaderboardName(pResult->m_hSteamLeaderboard, pResult->m_bSuccess);
 		if (leaderName == NULL) {
 			error = true;
 			return;
@@ -515,13 +563,7 @@ public:
 
 protected:
 	//HELPER: Perform some checks and get the name of the given leaderboard from the various result values.
-	const char* getLeaderboardName(SteamLeaderboard_t& leaderBoard, bool pSuccess, bool bIOFailure) const {
-		//Was there a generic I/O error?
-		if (bIOFailure) {
-			get_logfile() << "ERROR: Leaderboard callback returned an I/O error." << std::endl;
-			return NULL;
-		}
-
+	const char* getLeaderboardName(SteamLeaderboard_t& leaderBoard, bool pSuccess) const {
 		//Was the leaderboard found?
 		if (!pSuccess) {
 			get_logfile() << "ERROR: Leaderboard callback did not find the requested leaderboard." << std::endl;
@@ -578,9 +620,12 @@ private:
 	bool error;
 
 	//Callback for our two functions. We could (probably) map multiple, but let's keep it simple.
-	CCallResult<MySteamSuperClass, LeaderboardFindResult_t> steamLeaderboardCallback;
-	CCallResult<MySteamSuperClass, LeaderboardScoreUploaded_t> steamLeaderboardCallback2;
+	//CCallResult<MySteamSuperClass, LeaderboardFindResult_t> steamLeaderboardCallback;
+	//CCallResult<MySteamSuperClass, LeaderboardScoreUploaded_t> steamLeaderboardCallback2;
 	
+	//API handlers that we're manually tracking.
+	SteamAPICall_t findLeaderHdl;
+	SteamAPICall_t uploadLeaderHdl;
 
 };
 
