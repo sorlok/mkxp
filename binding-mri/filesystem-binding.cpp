@@ -39,6 +39,9 @@
 #include "ruby/encoding.h"
 #include "ruby/intern.h"
 
+//Used to hold various return values of type char* 
+std::string globalRes;
+
 static void
 fileIntFreeInstance(void *inst)
 {
@@ -458,6 +461,59 @@ public:
 		addNewLeaderboardHandle(leaderboardName);
 	}
 
+	const char* getUserId() const {
+		globalRes = "0";
+		ISteamUser* user = SteamUser();
+		if (!user) {
+			get_logfile() << "Steam library could not determine user ID." << std::endl;
+		} else {
+			std::stringstream msg;
+			msg << user->GetSteamID().ConvertToUint64();
+			globalRes = msg.str();
+		}
+
+		return globalRes.c_str();
+	}
+
+	int getNumEarnedAchieves() const {
+		ISteamUser* user = SteamUser();
+		ISteamUserStats* userStats = SteamUserStats();
+		ISteamFriends* userFriends = SteamFriends();
+		if (!(user && userStats)) {
+			get_logfile() << "Can't get Steam achievements; user or user_stats is null." << std::endl;
+			return 0;
+		}
+		get_logfile() << "Requesting stats for Steam player: " << std::string(userFriends ? userFriends->GetPersonaName() : "<unknown>") << std::endl;
+		if (!userStats->RequestCurrentStats()) {
+			get_logfile() << "Can't get Steam achievements; unknown error." << std::endl;
+			return 0;
+		}
+
+		//Count the current achievements
+		unsigned int numAchievesTotal = userStats->GetNumAchievements();
+		get_logfile() << "Steam server lists " << numAchievesTotal << " total achievements." << std::endl;
+
+		//Iterate, and check stats as we go.
+		int res = 0;
+		for (unsigned int i = 0; i < numAchievesTotal; i++) {
+			const char* achieve = userStats->GetAchievementName(i); //Let's hope this is managed by Steam; the API is unclear.
+			if (!achieve) {
+				get_logfile() << "Achievement id " << i << " is invalid." << std::endl;
+				continue;
+			}
+			bool gotIt = false;
+			if (!userStats->GetAchievement(achieve, &gotIt)) {
+				get_logfile() << "Achievement id " << i << "; couldn't get stats." << std::endl;
+				continue;
+			}
+			if (gotIt) {
+				res += 1;
+			}
+		}
+
+		get_logfile() << "User has earned " << res << "achievements." << std::endl;
+		return res;
+	}
 
 	//Achievements are far simpler. Returns 0 for ok, 1 for error.
 	int syncAchievement(std::string achievementName) {
@@ -756,6 +812,26 @@ RB_METHOD(steamSyncAchievement)
 }
 
 
+RB_METHOD(steamGetUserId)
+{
+	const char* res = 0;
+
+	GUARD_EXC( res = get_steam().getUserId(); )
+
+	return rb_str_new_cstr(res);
+}
+
+
+RB_METHOD(steamGetNumEarnedAchieves)
+{
+	int res = 0;
+
+	GUARD_EXC( res = get_steam().getNumEarnedAchieves(); )
+
+	return rb_int_new(res);
+}
+
+
 /////////////////////////////////////////////////////////////////////////
 // END STEAM
 /////////////////////////////////////////////////////////////////////////
@@ -840,6 +916,13 @@ fileIntBindingInit()
 	//Call this to sync a new leaderboard. Note that you should then call steam_tick() until a 1 or 2 is returned.
 	//(You can safely call several of these in a row.)
 	_rb_define_module_function(module, "steam_sync_leaderboard", steamSyncLeaderboard);
+
+	//Retrieve the number of achievements that Steam can confirm this user has earned.
+	_rb_define_module_function(module, "steam_get_num_earned_achieves", steamGetNumEarnedAchieves);
+
+	//Retrieve this user's id, as a string, with "0" meaning "unknown user"
+	_rb_define_module_function(module, "steam_get_user_id", steamGetUserId);
+	
 
 	//Call this to sync a single achievement. Note that you do NOT need to call steam_tick().
 	//Note that a return value of 1 does *not* disable everything (like leaderboards). 
