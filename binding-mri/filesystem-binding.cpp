@@ -39,8 +39,6 @@
 #include "ruby/encoding.h"
 #include "ruby/intern.h"
 
-//Used to hold various return values of type char* 
-std::string globalRes;
 
 static void
 fileIntFreeInstance(void *inst)
@@ -461,18 +459,18 @@ public:
 		addNewLeaderboardHandle(leaderboardName);
 	}
 
-	const char* getUserId() const {
-		globalRes = "0";
+	std::string getUserId() const {
+		std::string res;
 		ISteamUser* user = SteamUser();
 		if (!user) {
 			get_logfile() << "Steam library could not determine user ID." << std::endl;
 		} else {
 			std::stringstream msg;
-			msg << user->GetSteamID().ConvertToUint64();
-			globalRes = msg.str();
+			msg <<user->GetSteamID().ConvertToUint64();
+			res = msg.str();
 		}
 
-		return globalRes.c_str();
+		return res;
 	}
 
 	int getNumEarnedAchieves() const {
@@ -814,11 +812,11 @@ RB_METHOD(steamSyncAchievement)
 
 RB_METHOD(steamGetUserId)
 {
-	const char* res = 0;
+	std::string res;
 
 	GUARD_EXC( res = get_steam().getUserId(); )
 
-	return rb_str_new_cstr(res);
+	return rb_str_new_cstr(res.empty() ? "0" : res.c_str());
 }
 
 
