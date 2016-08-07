@@ -51,7 +51,12 @@ public:
 
 	// returns the CSteamID of the account currently logged into the Steam client
 	// a CSteamID is a unique identifier for an account, and used to differentiate users in all parts of the Steamworks API
+#ifdef _WIN32
+	//Evil hack: for MinGW function alignment.
+	virtual void GetSteamID(CSteamID&) = 0;
+#else
 	virtual CSteamID GetSteamID() = 0;
+#endif
 
 	// Multiplayer Authentication functions
 	

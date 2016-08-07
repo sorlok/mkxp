@@ -19,6 +19,20 @@
 ** along with mkxp.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+///////////////////////////////////////////////////////////////
+// WARNING: The getSteamId() relies on a Steam API call that 
+//          breaks on MinGW. To get around this, change
+//          the following in isteamuser.h from:
+//              virtual CSteamID GetSteamID() = 0;
+//          to:
+//              #ifdef _WIN32
+//                virtual void GetSteamID(CSteamID&) = 0;
+//              #else
+//                virtual CSteamID GetSteamID() = 0;
+//              #endif
+//          This forces the function to align correctly, but is scary.
+///////////////////////////////////////////////////////////////
+
 #include "binding-util.h"
 
 #include "sharedstate.h"
@@ -466,7 +480,14 @@ public:
 			get_logfile() << "Steam library could not determine user ID." << std::endl;
 		} else {
 			std::stringstream msg;
+#ifdef _WIN32
+			//Evil hack: see top of file.
+			CSteamID userId;
+			user->GetSteamID(userId);
+			msg <<userId.ConvertToUint64();
+#else
 			msg <<user->GetSteamID().ConvertToUint64();
+#endif
 			res = msg.str();
 		}
 
