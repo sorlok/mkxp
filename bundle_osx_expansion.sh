@@ -167,7 +167,7 @@ cp -r Game.ini.default $APPNAME/Contents/Resources/Game.ini
 
 #Do Valve's weird dance.
 echo "Steamifying..."
-appid=$(head -n 1 $ORIGRES/steam_appid.txt)
+appid=448170
 /Applications/ContentPrep.app/Contents/MacOS/contentprep.py --console --source=$APPNAME  --dest=$BNDLFLDR  --noscramble  --appid=$appid
 
 #Now, do a sanity check.
