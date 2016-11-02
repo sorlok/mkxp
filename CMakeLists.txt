@@ -238,6 +238,9 @@ elseif(LINUX)
     "/usr/local/lib/libSDL2_ttf.a"
     "/usr/local/lib/libSDL_sound.a"
     "/usr/local/lib/libSDL2.a"
+    "-lXxf86vm"
+    "-lXext"
+    "-lX11"
     ${RUBY_STATIC_LIB2}
     "pthread"
     "dl"
