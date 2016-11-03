@@ -175,30 +175,30 @@ endif()
 if (WINDOWS)
   if (WIN32_ONLY)
     set(RUBY_STATIC_LIB
-      "/home/sethhetu/.rake-compiler/builds/i686-w64-mingw32.static/ruby-2.2.2/libmsvcrt-ruby220-static.a"
-      "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libphysfs.a"
-      "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libSDL2_image.a"
-      "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libSDL2_ttf.a"
-      "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libSDL_sound.a"
-      "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libSDL2.a"
-      "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libFLAC.a"
-      "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libspeex.a"
-      "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libgmp.a"
-      "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libjpeg.a"
-      "/home/sethhetu/source/mxe/usr/i686-w64-mingw32.static/lib/libiphlpapi.a")
+      "/home/whitegiantrpg/.rake-compiler/builds/i686-w64-mingw32.static/ruby-2.3.1/libmsvcrt-ruby230-static.a"
+      "/home/whitegiantrpg/source/mxe/usr/i686-w64-mingw32.static/lib/libphysfs.a"
+      "/home/whitegiantrpg/source/mxe/usr/i686-w64-mingw32.static/lib/libSDL2_image.a"
+      "/home/whitegiantrpg/source/mxe/usr/i686-w64-mingw32.static/lib/libSDL2_ttf.a"
+      "/home/whitegiantrpg/source/mxe/usr/i686-w64-mingw32.static/lib/libSDL_sound.a"
+      "/home/whitegiantrpg/source/mxe/usr/i686-w64-mingw32.static/lib/libSDL2.a"
+      "/home/whitegiantrpg/source/mxe/usr/i686-w64-mingw32.static/lib/libFLAC.a"
+      "/home/whitegiantrpg/source/mxe/usr/i686-w64-mingw32.static/lib/libspeex.a"
+      "/home/whitegiantrpg/source/mxe/usr/i686-w64-mingw32.static/lib/libgmp.a"
+      "/home/whitegiantrpg/source/mxe/usr/i686-w64-mingw32.static/lib/libjpeg.a"
+      "/home/whitegiantrpg/source/mxe/usr/i686-w64-mingw32.static/lib/libiphlpapi.a")
   else()
     set(RUBY_STATIC_LIB
-      "/home/sethhetu/.rake-compiler/builds/x86_64-w64-mingw32.static/ruby-2.2.2/libx64-msvcrt-ruby220-static.a"
-      "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libphysfs.a"
-      "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libSDL2_image.a"
-      "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libSDL2_ttf.a"
-      "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libSDL_sound.a"
-      "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libSDL2.a"
-      "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libFLAC.a"
-      "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libspeex.a"
-      "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libgmp.a"
-      "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libjpeg.a"
-      "/home/sethhetu/source/mxe/usr/x86_64-w64-mingw32.static/lib/libiphlpapi.a")
+      "/home/whitegiantrpg/.rake-compiler/builds/x86_64-w64-mingw32.static/ruby-2.3.1/libx64-msvcrt-ruby230-static.a"
+      "/home/whitegiantrpg/source/mxe/usr/x86_64-w64-mingw32.static/lib/libphysfs.a"
+      "/home/whitegiantrpg/source/mxe/usr/x86_64-w64-mingw32.static/lib/libSDL2_image.a"
+      "/home/whitegiantrpg/source/mxe/usr/x86_64-w64-mingw32.static/lib/libSDL2_ttf.a"
+      "/home/whitegiantrpg/source/mxe/usr/x86_64-w64-mingw32.static/lib/libSDL_sound.a"
+      "/home/whitegiantrpg/source/mxe/usr/x86_64-w64-mingw32.static/lib/libSDL2.a"
+      "/home/whitegiantrpg/source/mxe/usr/x86_64-w64-mingw32.static/lib/libFLAC.a"
+      "/home/whitegiantrpg/source/mxe/usr/x86_64-w64-mingw32.static/lib/libspeex.a"
+      "/home/whitegiantrpg/source/mxe/usr/x86_64-w64-mingw32.static/lib/libgmp.a"
+      "/home/whitegiantrpg/source/mxe/usr/x86_64-w64-mingw32.static/lib/libjpeg.a"
+      "/home/whitegiantrpg/source/mxe/usr/x86_64-w64-mingw32.static/lib/libiphlpapi.a")
   endif()
 elseif(LINUX)
   #More static hackery
@@ -649,12 +649,12 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 if (WINDOWS)
   if (WIN32_ONLY)
     target_include_directories(${PROJECT_NAME} PRIVATE
-        "/home/sethhetu/.rake-compiler/ruby/i686-w64-mingw32.static/ruby-2.2.2/include/ruby-2.2.0/"
-        "/home/sethhetu/.rake-compiler/ruby/i686-w64-mingw32.static/ruby-2.2.2/include/ruby-2.2.0/i386-mingw32.static")
+        "/home/whitegiantrpg/.rake-compiler/ruby/i686-w64-mingw32.static/ruby-2.3.1/include/ruby-2.3.0/"
+        "/home/whitegiantrpg/.rake-compiler/ruby/i686-w64-mingw32.static/ruby-2.3.1/include/ruby-2.3.0/i386-mingw32.static")
   else()
     target_include_directories(${PROJECT_NAME} PRIVATE
-        "/home/sethhetu/.rake-compiler/ruby/x86_64-w64-mingw32.static/ruby-2.2.2/include/ruby-2.2.0/"
-        "/home/sethhetu/.rake-compiler/ruby/x86_64-w64-mingw32.static/ruby-2.2.2/include/ruby-2.2.0/x64-mingw32.static")
+        "/home/whitegiantrpg/.rake-compiler/ruby/x86_64-w64-mingw32.static/ruby-2.3.1/include/ruby-2.3.0/"
+        "/home/whitegiantrpg/.rake-compiler/ruby/x86_64-w64-mingw32.static/ruby-2.3.1/include/ruby-2.3.0/x64-mingw32.static")
   endif()
 endif()
 
