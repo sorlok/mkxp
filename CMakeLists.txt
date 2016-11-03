@@ -174,6 +174,7 @@ endif()
 #Windows adds a whole bunch of garbage
 if (WINDOWS)
   if (WIN32_ONLY)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=i686")
     set(RUBY_STATIC_LIB
       "$ENV{HOME}/.rake-compiler/builds/i686-w64-mingw32.static/ruby-2.3.1/libmsvcrt-ruby230-static.a"
       "$ENV{HOME}/source/mxe/usr/i686-w64-mingw32.static/lib/libphysfs.a"
