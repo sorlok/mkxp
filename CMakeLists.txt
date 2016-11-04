@@ -482,11 +482,7 @@ source_group("Embedded Source" FILES ${EMBEDDED_INPUT} ${EMBEDDED_SOURCE})
 ## Setup binding source ##
 
 if (BINDING STREQUAL "MRI")
-        if(LINUX)
-          set(MRIVERSION "2.3" CACHE STRING "Version of MRI to link with")
-        else()
-          set(MRIVERSION "2.2" CACHE STRING "Version of MRI to link with")
-        endif()
+        set(MRIVERSION "2.3" CACHE STRING "Version of MRI to link with")
         if (WINDOWS)
 	  pkg_check_modules(MRI  ruby-${MRIVERSION})
         else()
