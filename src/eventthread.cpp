@@ -539,12 +539,14 @@ void EventThread::process(RGSSThreadData &rtData)
 
 						//Safety when called on Linux
 						if (width >= 0 && height >= 0) {
+							std::cout <<"MKXP: Calling SetWindowSize[1](" <<width <<"," <<height <<")\n";
 							SDL_SetWindowSize(win, width, height);
 							requestWindowCenterRaise(x, y);
 							break;
 						}
 					}
 					//Standard request
+					std::cout <<"MKXP: Calling SetWindowSize[2](" <<width <<"," <<height <<")\n";
 					SDL_SetWindowSize(win, width, height);
 					requestWindowCenterRaise(SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 				}
@@ -686,6 +688,7 @@ void EventThread::resetInputStates()
 
 void EventThread::setFullscreen(SDL_Window *win, bool mode)
 {
+	std::cout <<"MKXP: Calling SetWindowFullscreen(" <<(mode ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0) <<")\n";
 	SDL_SetWindowFullscreen
 	        (win, mode ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 	SDL_SetWindowPosition(win, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
@@ -729,6 +732,7 @@ void EventThread::requestWindowResize(int width, int height)
 
 void EventThread::requestWindowCenterRaise(int x, int y)
 {
+	std::cout <<"MKXP: Calling requestWindowCenterRaise(" <<x <<"," <<y <<")\n";
 	SDL_Event event;
 	event.type = usrIdStart + REQUEST_WINCENTERRAISE;
 	event.window.data1 = x;
