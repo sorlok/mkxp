@@ -1,4 +1,8 @@
 cmake_minimum_required(VERSION 2.8.11)
+
+set(CMAKE_OSX_DEPLOYMENT_TARGET 10.7)
+
+
 Project(mkxp)
 
 ## Setup options ##
@@ -8,6 +12,7 @@ option(WORKDIR_CURRENT "Keep current directory on startup" OFF)
 option(FORCE32 "Force 32bit compile on 64bit OS" OFF)
 set(BINDING "MRI" CACHE STRING "The Binding Type (MRI, MRUBY, NULL)")
 set(EXTERNAL_LIB_PATH "" CACHE PATH "External precompiled lib prefix")
+
 
 ## Misc setup ##
 
@@ -25,6 +30,9 @@ IF(WORKDIR_CURRENT)
 	)
 ENDIF()
 
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11  -O2")
+
+
 IF(FORCE32)
 	if(APPLE)
 		SET(CMAKE_OSX_ARCHITECTURES "i386")
@@ -34,7 +42,42 @@ IF(FORCE32)
 	endif()
 ENDIF()
 
-set(CMAKE_OSX_DEPLOYMENT_TARGET 10.6)
+#We need a Windows flag
+IF(LINUX)
+  SET(WINDOWS OFF)
+
+  #Determine Linux architecture through some hackery.
+  if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+    MESSAGE("64-bit Linux Builds are ON")
+    SET(LIN32_ONLY OFF)
+  else()
+    MESSAGE("32-bit Linux Builds are ON")
+    SET(LIN32_ONLY ON)
+  endif()
+elseif(APPLE)
+  SET(WINDOWS OFF)
+else() #Windows?
+  SET(WINDOWS ON)
+
+  #Determine Windows architecture through some hackery.
+  if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+    MESSAGE("64-bit Windows Builds are ON")
+    SET(WIN32_ONLY OFF)
+  else()
+    MESSAGE("32-bit Windows Builds are ON")
+    SET(WIN32_ONLY ON)
+  endif()
+endif()
+
+#We want as few dlls as possible on Windows, and a non-console Win32 app.
+if (WINDOWS)
+  set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++  -mwindows")
+elseif(LINUX)
+  #Linux static hackery (works around a steam overlay bug).
+  set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
+endif()
+
+set(CMAKE_OSX_DEPLOYMENT_TARGET 10.7)
 
 IF(LINUX)
 	if(CMAKE_SIZEOF_VOID_P MATCHES "8" AND NOT(FORCE32) )
@@ -85,16 +128,137 @@ endif()
 
 pkg_check_modules(SIGCXX        REQUIRED sigc++-2.0)
 pkg_check_modules(PIXMAN        REQUIRED pixman-1)
-pkg_check_modules(PHYSFS        REQUIRED physfs>=2.1)
 pkg_check_modules(VORBISFILE    REQUIRED vorbisfile)
-pkg_check_modules(SDL2          REQUIRED sdl2)
-pkg_check_modules(SDL2_TTF      REQUIRED SDL2_ttf)
-pkg_check_modules(SDL2_IMAGE    REQUIRED SDL2_image)
-pkg_check_modules(SDL_SOUND     REQUIRED SDL_sound)
 
-find_package(Boost 1.49 COMPONENTS program_options REQUIRED)
-find_package(OpenAL REQUIRED)
+#These are messed up currently on Windows
+if (WINDOWS) 
+  pkg_check_modules(PHYSFS         physfs>=2.1)
+  pkg_check_modules(SDL2           sdl2)
+  pkg_check_modules(SDL2_TTF       SDL2_ttf)
+  pkg_check_modules(SDL2_IMAGE     SDL2_image)
+  pkg_check_modules(SDL_SOUND      SDL_sound)
+else()
+  pkg_check_modules(PHYSFS     REQUIRED    physfs>=2.1)
+  pkg_check_modules(SDL2       REQUIRED    sdl2)
+  pkg_check_modules(SDL2_TTF   REQUIRED    SDL2_ttf)
+  pkg_check_modules(SDL2_IMAGE REQUIRED    SDL2_image)
+  pkg_check_modules(SDL_SOUND  REQUIRED    SDL_sound)
+endif()
+
+
+#OS-X confuses OpenAL (Framework) and OpenALSOFT (library)
+if(APPLE)
+  pkg_check_modules(OPENALSOFT    REQUIRED openal)
+  set(OPENAL_INCLUDE_DIR  ${OPENALSOFT_INCLUDE_DIRS})
+  set(OPENAL_LIBRARY  ${OPENALSOFT_LIBRARIES})
+else()
+  find_package(OpenAL REQUIRED)
+endif()
+
+#Not worth the trouble.
+if(APPLE)
+  set(Boost_LIBRARIES "")
+else()
+  find_package(Boost 1.49 COMPONENTS program_options REQUIRED)
+endif()
+
 find_package(ZLIB REQUIRED)
+
+# We hijack Ruby differently in each case. :)
+if(APPLE)
+  set(RUBY_STATIC_LIB  "/opt/local/lib/libruby-static.a")
+else()
+  set(RUBY_STATIC_LIB  "/usr/local/lib/libruby-static.a")
+endif()
+
+#Windows adds a whole bunch of garbage
+if (WINDOWS)
+  if (WIN32_ONLY)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=i686")
+    set(RUBY_STATIC_LIB
+      "$ENV{HOME}/.rake-compiler/builds/i686-w64-mingw32.static/ruby-2.3.1/libmsvcrt-ruby230-static.a"
+      "$ENV{HOME}/source/mxe/usr/i686-w64-mingw32.static/lib/libphysfs.a"
+      "$ENV{HOME}/source/mxe/usr/i686-w64-mingw32.static/lib/libSDL2_image.a"
+      "$ENV{HOME}/source/mxe/usr/i686-w64-mingw32.static/lib/libSDL2_ttf.a"
+      "$ENV{HOME}/source/mxe/usr/i686-w64-mingw32.static/lib/libSDL_sound.a"
+      "$ENV{HOME}/source/mxe/usr/i686-w64-mingw32.static/lib/libSDL2.a"
+      "$ENV{HOME}/source/mxe/usr/i686-w64-mingw32.static/lib/libFLAC.a"
+      "$ENV{HOME}/source/mxe/usr/i686-w64-mingw32.static/lib/libspeex.a"
+      "$ENV{HOME}/source/mxe/usr/i686-w64-mingw32.static/lib/libgmp.a"
+      "$ENV{HOME}/source/mxe/usr/i686-w64-mingw32.static/lib/libjpeg.a"
+      "$ENV{HOME}/source/mxe/usr/i686-w64-mingw32.static/lib/libiphlpapi.a")
+  else()
+    set(RUBY_STATIC_LIB
+      "$ENV{HOME}/.rake-compiler/builds/x86_64-w64-mingw32.static/ruby-2.3.1/libx64-msvcrt-ruby230-static.a"
+      "$ENV{HOME}/source/mxe/usr/x86_64-w64-mingw32.static/lib/libphysfs.a"
+      "$ENV{HOME}/source/mxe/usr/x86_64-w64-mingw32.static/lib/libSDL2_image.a"
+      "$ENV{HOME}/source/mxe/usr/x86_64-w64-mingw32.static/lib/libSDL2_ttf.a"
+      "$ENV{HOME}/source/mxe/usr/x86_64-w64-mingw32.static/lib/libSDL_sound.a"
+      "$ENV{HOME}/source/mxe/usr/x86_64-w64-mingw32.static/lib/libSDL2.a"
+      "$ENV{HOME}/source/mxe/usr/x86_64-w64-mingw32.static/lib/libFLAC.a"
+      "$ENV{HOME}/source/mxe/usr/x86_64-w64-mingw32.static/lib/libspeex.a"
+      "$ENV{HOME}/source/mxe/usr/x86_64-w64-mingw32.static/lib/libgmp.a"
+      "$ENV{HOME}/source/mxe/usr/x86_64-w64-mingw32.static/lib/libjpeg.a"
+      "$ENV{HOME}/source/mxe/usr/x86_64-w64-mingw32.static/lib/libiphlpapi.a")
+  endif()
+elseif(LINUX)
+  #More static hackery
+  if (LIN32_ONLY)
+    set(RUBY_STATIC_LIB2
+      "/usr/lib/i386-linux-gnu/libfreetype.a"
+      "/usr/lib/i386-linux-gnu/libsigc-2.0.a"
+      "/usr/lib/i386-linux-gnu/libpixman-1.a"
+      "/usr/lib/i386-linux-gnu/libboost_program_options.a"
+      "/usr/lib/i386-linux-gnu/libvorbisfile.a"
+      "/usr/lib/i386-linux-gnu/libvorbis.a"
+      "/usr/lib/i386-linux-gnu/libogg.a"
+      "/usr/lib/i386-linux-gnu/libcrypt.a"
+      "/usr/lib/i386-linux-gnu/libjpeg.a"
+      "/usr/lib/i386-linux-gnu/libpng.a"
+      "/usr/lib/i386-linux-gnu/libz.a"
+    )
+  else()
+    set(RUBY_STATIC_LIB2
+      "/usr/lib/x86_64-linux-gnu/libfreetype.a"
+      "/usr/lib/x86_64-linux-gnu/libsigc-2.0.a"
+      "/usr/lib/x86_64-linux-gnu/libpixman-1.a"
+      "/usr/lib/x86_64-linux-gnu/libboost_program_options.a"
+      "/usr/lib/x86_64-linux-gnu/libvorbisfile.a"
+      "/usr/lib/x86_64-linux-gnu/libvorbis.a"
+      "/usr/lib/x86_64-linux-gnu/libogg.a"
+      "/usr/lib/x86_64-linux-gnu/libcrypt.a"
+      "/usr/lib/x86_64-linux-gnu/libjpeg.a"
+      "/usr/lib/x86_64-linux-gnu/libpng.a"
+      "/usr/lib/x86_64-linux-gnu/libz.a"
+    )
+  endif()
+  set(RUBY_STATIC_LIB
+    "/usr/local/lib/libruby-static.a"
+    "/usr/local/lib/libphysfs.a"
+    "/usr/local/lib/libSDL2_image.a"
+    "/usr/local/lib/libSDL2_ttf.a"
+    "/usr/local/lib/libSDL_sound.a"
+    "/usr/local/lib/libSDL2.a"
+    ${RUBY_STATIC_LIB2}
+    "pthread"
+    "dl"
+    "m"
+  )
+
+  set(SIGCXX_LIBRARIES "")
+  set(SDL2_LIBRARIES "")
+  set(SDL2_IMAGE_LIBRARIES "")
+  set(SDL2_TTF_LIBRARIES "")
+  set(SDL_SOUND_LIBRARIES "")
+  set(PHYSFS_LIBRARIES "")
+  set(PIXMAN_LIBRARIES "")
+  set(Boost_LIBRARIES "")
+  set(VORBISFILE_LIBRARIES "")
+  set(VORBIS_LIBRARIES "")
+  set(ZLIB_LIBRARY "")
+  set(MRI_LIBRARIES "")
+endif()
+
 
 ## Setup main source ##
 
@@ -205,6 +369,34 @@ set(MAIN_SOURCE
 	src/fluid-fun.cpp
 )
 
+#Windows Icon
+if (WINDOWS)
+  set(WINDOWS_RES_FILE "windows_icon.rc")
+else()
+  set(WINDOWS_RES_FILE "")
+endif()
+
+
+
+#On OS-X, we just compile boost::program_options manually.
+if(APPLE)
+  set(MAIN_SOURCE 
+    ${MAIN_SOURCE}
+    boost/cmdline.cpp
+    boost/config_file.cpp
+    boost/convert.cpp
+    boost/options_description.cpp
+    boost/parsers.cpp
+    boost/positional_options.cpp
+    boost/split.cpp
+    boost/utf8_codecvt_facet.cpp
+    boost/value_semantic.cpp
+    boost/variables_map.cpp
+    boost/winmain.cpp
+  )
+endif()
+
+
 source_group("MKXP Source" FILES ${MAIN_SOURCE} ${MAIN_HEADERS})
 
 ## Setup embedded source ##
@@ -235,6 +427,9 @@ set(EMBEDDED_INPUT
 	shader/blurV.vert
 	shader/simpleMatrix.vert
 	assets/liberation.ttf
+	assets/deja.ttf
+	assets/droid.ttf
+	assets/verdana.ttf
 	assets/icon.png
 )
 
@@ -287,8 +482,13 @@ source_group("Embedded Source" FILES ${EMBEDDED_INPUT} ${EMBEDDED_SOURCE})
 ## Setup binding source ##
 
 if (BINDING STREQUAL "MRI")
-	set(MRIVERSION "2.1" CACHE STRING "Version of MRI to link with")
-	pkg_check_modules(MRI REQUIRED ruby-${MRIVERSION})
+        set(MRIVERSION "2.3" CACHE STRING "Version of MRI to link with")
+        if (WINDOWS)
+	  pkg_check_modules(MRI  ruby-${MRIVERSION})
+        else()
+	  pkg_check_modules(MRI REQUIRED  ruby-${MRIVERSION})
+        endif()
+
 	list(APPEND DEFINES
 		BINDING_MRI
 	)
@@ -309,6 +509,7 @@ if (BINDING STREQUAL "MRI")
 		binding-mri/bitmap-binding.cpp
 		binding-mri/font-binding.cpp
 		binding-mri/graphics-binding.cpp
+		binding-mri/keys-binding.cpp
 		binding-mri/input-binding.cpp
 		binding-mri/sprite-binding.cpp
 		binding-mri/viewport-binding.cpp
@@ -370,6 +571,30 @@ endif()
 
 source_group("Binding Source" FILES ${BINDING_SOURCE} ${BINDING_HEADERS})
 
+
+# Link Steamlib
+IF(LINUX)
+        set(STEAM_LIBRARY_DIR "")
+        if (LIN32_ONLY)
+  	  set(STEAM_LIBRARY "${CMAKE_SOURCE_DIR}/steamworks_133b/redistributable_bin/linux32/libsteam_api.so")
+        else()
+          set(STEAM_LIBRARY "${CMAKE_SOURCE_DIR}/steamworks_133b/redistributable_bin/linux64/libsteam_api.so")
+
+        endif()
+elseif(APPLE)
+        set(STEAM_LIBRARY_DIR "steamworks_133b/redistributable_bin/osx32")
+	set(STEAM_LIBRARY "steam_api")
+else() #Windows
+  if (WIN32_ONLY)
+    set(STEAM_LIBRARY_DIR "steamworks_133b/redistributable_bin")
+    set(STEAM_LIBRARY "steam_api")
+  else()
+    set(STEAM_LIBRARY_DIR "steamworks_133b/redistributable_bin/win64")
+    set(STEAM_LIBRARY "steam_api64")
+  endif()
+endif()
+
+
 ## Setup main executable ##
 
 if(APPLE)
@@ -390,6 +615,7 @@ link_directories(
 	${SDL2_LIBRARY_DIRS} # Blindly assume other SDL bits are in same directory
 	${Boost_LIBRARY_DIR}
 	${MRI_LIBDIR}
+        ${STEAM_LIBRARY_DIR}
 )
 
 add_executable(${PROJECT_NAME} MACOSX_BUNDLE
@@ -398,6 +624,7 @@ add_executable(${PROJECT_NAME} MACOSX_BUNDLE
 	${BINDING_HEADERS}
 	${BINDING_SOURCE}
 	${EMBEDDED_SOURCE}
+        ${WINDOWS_RES_FILE}
 )
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
@@ -414,7 +641,19 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	${VORBISFILE_INCLUDE_DIRS}
 	${FLUID_INCLUDE_DIRS}
 	${OPENAL_INCLUDE_DIR}
+	"steamworks_133b/"
 )
+if (WINDOWS)
+  if (WIN32_ONLY)
+    target_include_directories(${PROJECT_NAME} PRIVATE
+        "$ENV{HOME}/.rake-compiler/ruby/i686-w64-mingw32.static/ruby-2.3.1/include/ruby-2.3.0/"
+        "$ENV{HOME}/.rake-compiler/ruby/i686-w64-mingw32.static/ruby-2.3.1/include/ruby-2.3.0/i386-mingw32.static")
+  else()
+    target_include_directories(${PROJECT_NAME} PRIVATE
+        "$ENV{HOME}/.rake-compiler/ruby/x86_64-w64-mingw32.static/ruby-2.3.1/include/ruby-2.3.0/"
+        "$ENV{HOME}/.rake-compiler/ruby/x86_64-w64-mingw32.static/ruby-2.3.1/include/ruby-2.3.0/x64-mingw32.static")
+  endif()
+endif()
 
 target_link_libraries(${PROJECT_NAME}
 	${SIGCXX_LIBRARIES}
@@ -430,8 +669,11 @@ target_link_libraries(${PROJECT_NAME}
 	${FLUID_LIBRARIES}
 	${OPENAL_LIBRARY}
 	${ZLIB_LIBRARY}
+	${STEAM_LIBRARY}
 
 	${PLATFORM_LIBRARIES}
+        ${RUBY_STATIC_LIB}
 )
+
 
 PostBuildMacBundle(${PROJECT_NAME} "" "${PLATFORM_COPY_LIBS}")
