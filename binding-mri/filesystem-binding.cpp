@@ -856,6 +856,17 @@ RB_METHOD(steamGetNumEarnedAchieves)
 /////////////////////////////////////////////////////////////////////////
 
 
+RB_METHOD(specialSpriteCount)
+{
+	RB_UNUSED_PARAM;
+
+	int res = false;
+	GUARD_EXC( res=shState->getSpecialSpiteCount(); )
+
+	return rb_int_new(res);
+}
+
+
 RB_METHOD(configOverSetVsync)
 {
 	RB_UNUSED_PARAM;
@@ -956,6 +967,12 @@ fileIntBindingInit()
 	_rb_define_module_function(module, "get_vsync", configOverGetVsync);
 	_rb_define_module_function(module, "set_smooth", configOverSetSmooth);
 	_rb_define_module_function(module, "get_smooth", configOverGetSmooth);
+	}
+
+	//Special module for sprite count
+	{
+	VALUE module = rb_define_module("SpecialOpts");
+	_rb_define_module_function(module, "get_sprite_count", specialSpriteCount);
 	}
 
 

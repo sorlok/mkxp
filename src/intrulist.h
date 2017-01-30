@@ -123,6 +123,16 @@ public:
 		return node->data;
 	}
 
+	const IntruListLink<T> *begin() const
+	{
+		return root.next;
+	}
+
+	const IntruListLink<T> *end() const
+	{
+		return &root;
+	}
+
 	IntruListLink<T> *begin()
 	{
 		return root.next;

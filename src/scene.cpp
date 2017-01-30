@@ -22,6 +22,12 @@
 #include "scene.h"
 #include "sharedstate.h"
 
+#include "plane.h"
+#include "viewport.h"
+#include "window.h"
+#include "sprite.h"
+#include <iostream>
+
 Scene::Scene()
 {}
 
@@ -99,6 +105,18 @@ void Scene::composite()
 		if (e->visible)
 			e->draw();
 	}
+}
+
+
+int Scene::countElements() const
+{
+	//3 viewports, lots of viewport elements.
+	int res = 0;
+	for (auto iter = elements.begin(); iter != elements.end(); iter = iter->next) {
+		//std::cout <<"  ELEMENT: " <<dynamic_cast<const Viewport*>(iter->data) << " : " <<dynamic_cast<const Plane*>(iter->data) <<" : " <<dynamic_cast<const Window*>(iter->data) << " : " <<dynamic_cast<const Sprite*>(iter->data)  <<"\n";
+		res += iter->data->countElements();
+	}
+	return res;
 }
 
 

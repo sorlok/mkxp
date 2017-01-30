@@ -61,6 +61,8 @@ public:
 
 	const Geometry &getGeometry() const { return geometry; }
 
+	int countElements() const;
+
 protected:
 	void insert(SceneElement &element);
 	void insertAfter(SceneElement &element, SceneElement &after);
@@ -69,7 +71,7 @@ protected:
 	/* Notify all elements that geometry has changed */
 	void notifyGeometryChange();
 
-	IntruList<SceneElement> elements;
+ 	IntruList<SceneElement> elements;
 	Geometry geometry;
 
 	friend class SceneElement;
@@ -111,6 +113,8 @@ protected:
 	 * will fire immediately before each frame draw.
 	 */
 	virtual void draw() = 0;
+
+	virtual int countElements() const = 0;
 
 	// FIXME: This should be a signal
 	virtual void onGeometryChange(const Scene::Geometry &) {}

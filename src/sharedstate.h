@@ -96,6 +96,9 @@ struct SharedState
 	void overrideConfigVsync(bool val);
 	bool getConfigVsync() const;
 
+	// Get sprite count.
+	int getSpecialSpiteCount() const;
+
 	/* Returns global quad IBO, and ensures it has indices
 	 * for at least minSize quads */
 	void ensureQuadIBO(size_t minSize);

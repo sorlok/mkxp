@@ -47,6 +47,8 @@ public:
 
 	void initDynAttribs();
 
+	virtual int countElements() const { return Scene::countElements(); }
+
 private:
 	void initViewport(int x, int y, int width, int height);
 	void geometryChanged();
@@ -73,6 +75,8 @@ public:
 	ViewportElement(Viewport *viewport = 0, int z = 0, int spriteY = 0);
 
 	DECL_ATTR( Viewport,  Viewport* )
+
+	virtual int countElements() const { return 1; }
 
 protected:
 	virtual void onViewportChange() {}
