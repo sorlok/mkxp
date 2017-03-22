@@ -867,6 +867,35 @@ RB_METHOD(specialSpriteCount)
 }
 
 
+RB_METHOD(tcpSenderSlimInit)
+{
+	RB_UNUSED_PARAM;
+
+	const char* host = "";
+	int port = 0;
+	rb_get_args(argc, argv, "zi|", &host, &port RB_ARG_END);
+
+	int res = 0;
+	GUARD_EXC( res = shState->tcpSenderSlimInit(host, port); )
+
+	return rb_int_new(res);
+}
+
+
+RB_METHOD(tcpSenderSlimSendOnly)
+{
+	RB_UNUSED_PARAM;
+
+	const char* message = "";
+	rb_get_args(argc, argv, "z|", &message RB_ARG_END);
+
+    int res = 0;
+	GUARD_EXC( res = shState->tcpSenderSlimSendOnly(message); )
+
+	return rb_int_new(res);
+}
+
+
 RB_METHOD(configOverSetVsync)
 {
 	RB_UNUSED_PARAM;
@@ -975,6 +1004,12 @@ fileIntBindingInit()
 	_rb_define_module_function(module, "get_sprite_count", specialSpriteCount);
 	}
 
+	//TCP Client code
+	{
+	VALUE module = rb_define_module("TcpSenderSlim");
+	_rb_define_module_function(module, "init", tcpSenderSlimInit);
+	_rb_define_module_function(module, "send_only", tcpSenderSlimSendOnly);
+	}
 
 	VALUE klass = rb_define_class("FileInt", rb_cIO);
 	rb_define_alloc_func(klass, classAllocate<&FileIntType>);

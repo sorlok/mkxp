@@ -23,6 +23,7 @@
 #define SHAREDSTATE_H
 
 #include <sigc++/signal.h>
+#include <string>
 
 #define shState SharedState::instance
 #define glState shState->_glState()
@@ -87,6 +88,14 @@ struct SharedState
 	SharedMidiState &midiState() const;
 
 	sigc::signal<void> prepareDraw;
+
+	//Init restarts the server, if it's not already running (or if its properties have changed).
+	//SendOnly sends a message (appending a newline) and doesn't wait for a response.
+	//Returns 0 for "Ok", 1 for "No-op" (i.e., no reconf. on init), and 2+ for "Error"
+	//Returns -1 for "not yet connected."
+	int tcpSenderSlimInit(std::string host, uint16_t port);
+	int tcpSenderSlimSendOnly(std::string message);
+
 
 	unsigned int genTimeStamp();
 

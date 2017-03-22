@@ -39,12 +39,14 @@
 #include "binding.h"
 #include "exception.h"
 #include "sharedmidistate.h"
+#include "tcp_sender_slim.h"
 
 #include <memory>
+#include <string>
 #include <cxxabi.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <string>
+#include <stdint.h>
 
 
 //Borrowed from:
@@ -100,6 +102,8 @@ struct SharedStatePrivate
 	WolfPad wolfpad;
 	Input input;
 	Audio audio;
+
+	TcpSenderSlim tcpSenderSlim;
 
 	GLState _glState;
 
@@ -380,6 +384,16 @@ void SharedState::checkReset()
 Font &SharedState::defaultFont() const
 {
 	return *p->defaultFont;
+}
+
+int SharedState::tcpSenderSlimInit(std::string host, uint16_t port)
+{
+	return p->tcpSenderSlim.init(host, port);
+}
+
+int SharedState::tcpSenderSlimSendOnly(std::string message)
+{
+	return p->tcpSenderSlim.send_only(message);
 }
 
 unsigned int SharedState::genTimeStamp()
