@@ -94,6 +94,9 @@ IF(LINUX)
 elseif(APPLE)
 	SET(BIN_RPATH "@executable_path/../Frameworks")
 	set(LIB_PATH "lib")
+else() #Windows
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_WIN32_WINNT=0x0601")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_WIN32_WINNT=0x0601")
 endif()
 
 set(CMAKE_SKIP_BUILD_RPATH TRUE)
