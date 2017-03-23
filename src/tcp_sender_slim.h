@@ -129,6 +129,9 @@ public:
         get_logfile() << "Starting main thread..." << std::endl;
         startMainThread();
         this->running = true;
+#ifdef _WIN32
+      LeaveCriticalSection (&critical);
+#endif
         return mainStatus.load();
       }
 
@@ -176,6 +179,7 @@ public:
 
   //Main (threaded) loop.
   void run() {
+    bool firstTime = true;
     for (;;) {
       //Get a copy of the params, exit early if done.
       std::string currHost;
@@ -187,8 +191,16 @@ public:
 #else
         std::unique_lock<std::mutex> lock(mutex);
 #endif
-get_logfile() << "Top of run loop, with running: " <<running << std::endl;
-        if (!running) { return; }
+        if (firstTime) {
+          firstTime = false;
+          get_logfile() << "Top of run loop, with running: " <<running << std::endl;
+        }
+        if (!running) {
+#ifdef _WIN32
+        LeaveCriticalSection (&critical);
+#endif
+          return;
+        }
         currHost = host;
         currPort = port;
         currMessages = messages;
