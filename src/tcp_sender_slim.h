@@ -148,6 +148,11 @@ public:
     return mainStatus.load();
   }
 
+  //Status update?
+  int get_status() {
+    return mainStatus.load();
+  }
+
   //Non-threaded: send a message and return without waiting for a reply
   int send_only(std::string msg) {
     //Skip empty messages, and ensure they end in newlines.

@@ -895,6 +895,15 @@ RB_METHOD(tcpSenderSlimSendOnly)
 	return rb_int_new(res);
 }
 
+RB_METHOD(tcpSenderSlimGetStatus)
+{
+	RB_UNUSED_PARAM;
+
+    int res = 0;
+	GUARD_EXC( res = shState->tcpSenderSlimGetStatus(); )
+
+	return rb_int_new(res);
+}
 
 RB_METHOD(configOverSetVsync)
 {
@@ -1009,6 +1018,7 @@ fileIntBindingInit()
 	VALUE module = rb_define_module("TcpSenderSlim");
 	_rb_define_module_function(module, "init", tcpSenderSlimInit);
 	_rb_define_module_function(module, "send_only", tcpSenderSlimSendOnly);
+	_rb_define_module_function(module, "get_status", tcpSenderSlimGetStatus);
 	}
 
 	VALUE klass = rb_define_class("FileInt", rb_cIO);

@@ -396,6 +396,11 @@ int SharedState::tcpSenderSlimSendOnly(std::string message)
 	return p->tcpSenderSlim.send_only(message);
 }
 
+int SharedState::tcpSenderSlimGetStatus()
+{
+	return p->tcpSenderSlim.get_status();
+}
+
 unsigned int SharedState::genTimeStamp()
 {
 	return p->stampCounter++;

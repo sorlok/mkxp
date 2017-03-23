@@ -95,6 +95,7 @@ struct SharedState
 	//Returns -1 for "not yet connected."
 	int tcpSenderSlimInit(std::string host, uint16_t port);
 	int tcpSenderSlimSendOnly(std::string message);
+	int tcpSenderSlimGetStatus();
 
 
 	unsigned int genTimeStamp();
