@@ -61,7 +61,8 @@ public:
 #ifdef _WIN32
     mainThread = HANDLE();
     InitializeCriticalSection (&critical);
-    InitializeConditionVariable (&condition);
+    //InitializeConditionVariable (&condition);
+    newDataEvent = CreateEvent ( NULL , false , false , NULL );
 #endif
   }
 
@@ -86,7 +87,8 @@ public:
     if (doWait) {
       get_logfile() << "Waiting for thread to close down..." << std::endl;
 #ifdef _WIN32
-      WakeAllConditionVariable (&condition);
+      SetEvent ( newDataEvent ); //Notify
+      //WakeAllConditionVariable (&condition);
       WaitForSingleObject((HANDLE)mainThread, INFINITE);
 #else
       condition.notify_all();
@@ -96,6 +98,7 @@ public:
 
     //CS no longer needed.
 #ifdef _WIN32
+    CloseHandle(newDataEvent);
     //CloseHandle( critical ); //????
 #endif
   }
@@ -106,6 +109,12 @@ public:
   int init(std::string host, uint16_t port) {
     if (!log_file.is_open()) {
       log_file.open("tcp_log.txt");
+    }
+
+    if ( newDataEvent==NULL ) {
+      get_logfile() << "ERROR: Couldn't create event" << std::endl;
+      mainStatus = 441;
+      return mainStatus.load();
     }
 
     //Localhost
@@ -141,7 +150,8 @@ public:
     }
 
 #ifdef _WIN32
-    WakeAllConditionVariable (&condition);
+    SetEvent ( newDataEvent ); //Notify
+    //WakeAllConditionVariable (&condition);
 #else
     condition.notify_one();
 #endif
@@ -175,7 +185,8 @@ public:
     }
 
 #ifdef _WIN32
-    WakeAllConditionVariable (&condition);
+    SetEvent ( newDataEvent ); //Notify
+    //WakeAllConditionVariable (&condition);
 #else
     condition.notify_one();
 #endif
@@ -334,7 +345,7 @@ public:
       {
         get_logfile() << "Waiting for notification." << std::endl;
 #ifdef _WIN32
-        EnterCriticalSection (&critical);
+//        EnterCriticalSection (&critical);
 #else
         std::unique_lock<std::mutex> lock(mutex);
 #endif
@@ -343,10 +354,17 @@ public:
 #ifdef _WIN32
         bool resDone = false;
         while (!resDone) {
-          SleepConditionVariableCS (&condition, &critical, INFINITE);
+          //SleepConditionVariableCS (&condition, &critical, INFINITE);
+          WaitForSingleObject ( newDataEvent, INFINITE );
+#ifdef _WIN32
+        EnterCriticalSection (&critical);
+#endif
           if (!running) { resDone=true; }
           if ((sockHost!=host) || (sockPort!=port)) { resDone=true; }
           if (!messages.empty()) { resDone=true; }
+#ifdef _WIN32
+        LeaveCriticalSection (&critical);
+#endif
           get_logfile() << "Woke on notify; done is: " <<resDone << std::endl;
         }
 #else
@@ -361,7 +379,7 @@ public:
 #endif
 
 #ifdef _WIN32
-        LeaveCriticalSection (&critical);
+//        LeaveCriticalSection (&critical);
 #endif
       }
     }
@@ -418,7 +436,8 @@ private:
   //Notifier.
 #ifdef _WIN32
   CRITICAL_SECTION critical;
-  CONDITION_VARIABLE condition;
+  //CONDITION_VARIABLE condition;
+  HANDLE newDataEvent;
 #else
   std::mutex mutex;
   std::condition_variable condition;
