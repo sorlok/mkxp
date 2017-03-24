@@ -49,6 +49,12 @@
 #include <stdint.h>
 
 
+#ifdef __APPLE__
+
+std::string demangle(const char* name) { return "UNKNOWN"; }
+
+#else
+
 //Borrowed from:
 // http://stackoverflow.com/questions/281818/unmangling-the-result-of-stdtype-infoname
 //...but not used in-game.
@@ -65,6 +71,7 @@ std::string demangle(const char* name) {
     return (status==0) ? res.get() : name ;
 }
 
+#endif  //__APPLE__
 
 SharedState *SharedState::instance = 0;
 int SharedState::rgssVersion = 0;

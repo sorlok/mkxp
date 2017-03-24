@@ -1,6 +1,22 @@
 #ifndef TCP_SENDER_SLIM_H
 #define TCP_SENDER_SLIM_H
 
+
+#ifdef __APPLE__
+
+//Our OS-X build has trouble with new C++11 concepts for some reason....
+const int Tears = 555;
+class TcpSenderSlim {
+public:
+  int init(std::string host, uint16_t port) { return Tears; }
+  int send_only(std::string msg) { return Tears; }
+  int get_status() { return Tears; }
+};
+
+
+#else
+
+
 #include <vector>
 #include <atomic>
 #include <fstream>
@@ -516,7 +532,7 @@ bool TcpSenderSlim::tryConnect()
 #endif
 
 
-
+#endif //__APPLE__
 
 
 #endif //TCP_SENDER_SLIM_H
