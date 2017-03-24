@@ -8,23 +8,152 @@
 #include <cstring>
 
 #ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #else
 #include <thread>
 #include <mutex>
 #include <condition_variable>
-#endif
-
-#ifdef _WIN32
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#else
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #endif
 
 
+// Worker macros
+#define NoOp() ((void)0);
+
+#ifdef _WIN32
+  //Private member variables of the TcpSenderSlim class.
+  #define MemberVars   \
+    addrinfo* my_res;  \
+    addrinfo* ptr;     \
+    addrinfo hints;    \
+    WSADATA wsaData;   \
+    SOCKET sock;       \
+    HANDLE mainThread; \
+    CRITICAL_SECTION critical; \
+    HANDLE newDataEvent;
+
+
+  //Called in TcpSenderSlim()
+  #define PlatformInit()   \
+    sock = INVALID_SOCKET; \
+    my_res = NULL;         \
+    ptr = NULL;            \
+    InitializeCriticalSection (&critical); \
+    newDataEvent = CreateEvent ( NULL , false , false , NULL ); \
+    if (newDataEvent == NULL) { initFailed = true; }
+
+  //Called in ~TcpSenderSlim(), but only if the thread was running.
+  #define PlatformDone()   \
+    SendNotifySignal(); \
+    WaitForSingleObject((HANDLE)mainThread, INFINITE);
+
+  //Cleanup inside the thread.
+  #define ThreadCleanup() \
+    if (sock != INVALID_SOCKET) {  \
+      get_logfile() << "Closing socket" << std::endl;  \
+      closesocket(sock);  \
+      WSACleanup();  \
+    }
+
+  //Called in ~TcpSenderSlim() once the thread is done.
+  #define PlatformClose()   \
+    CloseHandle(newDataEvent);
+
+  //Close the existing socket, if it exists.
+  #define CloseOldSocket() \
+    if (sock != INVALID_SOCKET) { \
+      get_logfile() << "Closing old socket" << std::endl; \
+      closesocket(sock); \
+    } else { \
+      /*More Windows grumbling*/  \
+      get_logfile() << "Starting up WSAStartup" << std::endl; \
+      if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) { \
+        mainStatus = 666; \
+        return; \
+      } \
+    }
+
+  //Called to lock/unlock our mutex or enter/leave our critical section.
+  #define GetLock()      EnterCriticalSection (&critical);
+  #define ReleaseLock()  LeaveCriticalSection (&critical);
+
+  //Get the lock, but only if it's needed to wait on the condition object.
+  //Same for release.
+  #define GetLockForCondition()      NoOp();
+  #define ReleaseLockForCondition()  NoOp();
+
+  //Get the lock, but only if it's needed to perform the check (i.e., we didn't get it for the condition)
+  #define GetLockForCheck()      GetLock();
+  #define ReleaseLockForCheck()  ReleaseLock();
+
+  //Send a signal (notification) to wake up the sleeper.
+  //Or, wait for that signal.
+  #define SendNotifySignal()   SetEvent ( newDataEvent );
+  #define WaitForSignal()      WaitForSingleObject ( newDataEvent, INFINITE );
+
+#else //Linux
+
+  //Private member variables of the TcpSenderSlim class.
+  #define MemberVars         \
+    int sock;                \
+    sockaddr_in server;      \
+    std::thread mainThread;  \
+    std::mutex mutex;        \
+    std::condition_variable condition;
+
+  //Called in TcpSenderSlim()
+  #define PlatformInit()   \
+    sock = -1;
+
+  //Called in ~TcpSenderSlim(), but only if the thread was running.
+  #define PlatformDone()    \
+    SendNotifySignal();     \
+    mainThread.join();
+
+  #define ThreadCleanup() \
+    if (sock != -1) {  \
+      get_logfile() << "Closing socket" << std::endl;  \
+      ::close(sock);  \
+    }
+
+  //Called in ~TcpSenderSlim() once the thread is done.
+  #define PlatformClose() NoOp();
+
+  //Close the existing socket, if it exists.
+  #define CloseOldSocket() \
+    if (sock != -1) { \
+      get_logfile() << "Closing old socket" << std::endl; \
+      ::close(sock); \
+    }
+
+  //Called to lock/unlock our mutex or enter/leave our critical section.
+  //Note that in Linux, the lock will *also* be released when it goes out of scope.
+  #define GetLock()      std::unique_lock<std::mutex> lock(mutex);
+  #define ReleaseLock()  lock.unlock();
+
+  //Get the lock, but only if it's needed to wait on the condition object.
+  //Same for release.
+  #define GetLockForCondition()      GetLock();
+  #define ReleaseLockForCondition()  ReleaseLock();
+
+  //Get the lock, but only if it's needed to perform the check (i.e., we didn't get it for the condition)
+  #define GetLockForCheck()      NoOp();
+  #define ReleaseLockForCheck()  NoOp();
+
+  //Send a signal (notification) to wake up the sleeper.
+  //Or, wait for that signal.
+  #define SendNotifySignal()   condition.notify_one();
+  #define WaitForSignal()      condition.wait(lock, [this] { return true; }
+
+#endif
+
+
 // Simple class for sending one-way TCP messages.
+// Windows-y complexity arises from us using MinGW+MXE,
+// plus whatever Microsoft's excuse is.
 class TcpSenderSlim {
 public:
   //Get our output stream (file).
@@ -45,65 +174,43 @@ public:
     sockHost = "";
     sockPort = 0;
 
-    //Must be -1 to avoid error on close.
-#ifdef _WIN32
-    sock = INVALID_SOCKET;
-    my_res = NULL;
-    ptr = NULL;
-#else
-    sock = -1;
-#endif
-
     //Return code; sometimes useful.
     mainStatus = -1;
 
-    //On Windows, make our CS/condition and initialize our thread to "error".
-#ifdef _WIN32
-    mainThread = HANDLE();
-    InitializeCriticalSection (&critical);
-    //InitializeConditionVariable (&condition);
-    newDataEvent = CreateEvent ( NULL , false , false , NULL );
-#endif
+    //Are we really in a bad state?
+    initFailed = false;
+
+    //Initialize our sockets and such.
+    PlatformInit();
   }
 
   ~TcpSenderSlim() {
     bool doWait = false;
     {
-#ifdef _WIN32
-      EnterCriticalSection (&critical);
-#else
-      std::unique_lock<std::mutex> lock(mutex);
-#endif
+      GetLock();
+
       if (this->running) {
         this->running = false;
         doWait = true;
       }
 
-#ifdef _WIN32
-      LeaveCriticalSection (&critical);
-#endif
+      ReleaseLock();
     }
 
     if (doWait) {
       get_logfile() << "Waiting for thread to close down..." << std::endl;
-#ifdef _WIN32
-      SetEvent ( newDataEvent ); //Notify
-      //WakeAllConditionVariable (&condition);
-      WaitForSingleObject((HANDLE)mainThread, INFINITE);
-#else
-      condition.notify_all();
-      mainThread.join();
-#endif
+      PlatformDone();
     }
 
-    //CS no longer needed.
-#ifdef _WIN32
-    CloseHandle(newDataEvent);
-    //CloseHandle( critical ); //????
-#endif
+    //Clean up resources
+    PlatformClose()
   }
 
   void startMainThread();
+
+  bool trySend(const std::string& msg);
+
+  bool tryConnect();
 
   //Non-threaded: initialize the server
   int init(std::string host, uint16_t port) {
@@ -111,8 +218,8 @@ public:
       log_file.open("tcp_log.txt");
     }
 
-    if ( newDataEvent==NULL ) {
-      get_logfile() << "ERROR: Couldn't create event" << std::endl;
+    if ( initFailed ) {
+      get_logfile() << "ERROR: Main init failed." << std::endl;
       mainStatus = 441;
       return mainStatus.load();
     }
@@ -124,11 +231,8 @@ public:
 
     {
       //Reset props, start thread if required.
-#ifdef _WIN32
-      EnterCriticalSection (&critical);
-#else
-      std::unique_lock<std::mutex> lock(mutex);
-#endif
+      GetLock();
+
       if ((this->host != host) || (this->port != port)) {
         this->messages.clear(); //Destined for old receiver.
         this->host = host;
@@ -138,23 +242,18 @@ public:
         get_logfile() << "Starting main thread..." << std::endl;
         startMainThread();
         this->running = true;
-#ifdef _WIN32
-      LeaveCriticalSection (&critical);
-#endif
+
+        ReleaseLock();
+
         return mainStatus.load();
       }
 
-#ifdef _WIN32
-      LeaveCriticalSection (&critical);
-#endif
+      ReleaseLock();
     }
 
-#ifdef _WIN32
-    SetEvent ( newDataEvent ); //Notify
-    //WakeAllConditionVariable (&condition);
-#else
-    condition.notify_one();
-#endif
+    //Wake up our main thread.
+    SendNotifySignal();
+
     return mainStatus.load();
   }
 
@@ -173,23 +272,14 @@ public:
 
     //Add to message queue.
     {
-#ifdef _WIN32
-      EnterCriticalSection (&critical);
-#else
-      std::unique_lock<std::mutex> lock(mutex);
-#endif
+      GetLock();
       messages.push_back(msg);
-#ifdef _WIN32
-      LeaveCriticalSection (&critical);
-#endif
+      ReleaseLock();
     }
 
-#ifdef _WIN32
-    SetEvent ( newDataEvent ); //Notify
-    //WakeAllConditionVariable (&condition);
-#else
-    condition.notify_one();
-#endif
+    //Wake up our main thread.
+    SendNotifySignal();
+
     return mainStatus.load();
   }
 
@@ -202,28 +292,25 @@ public:
       int16_t currPort;
       std::vector<std::string> currMessages;
       {
-#ifdef _WIN32
-        EnterCriticalSection (&critical);
-#else
-        std::unique_lock<std::mutex> lock(mutex);
-#endif
+
+        GetLock();
+
         if (firstTime) {
           firstTime = false;
           get_logfile() << "Top of run loop, with running: " <<running << std::endl;
         }
         if (!running) {
-#ifdef _WIN32
-        LeaveCriticalSection (&critical);
-#endif
+
+          ReleaseLock();
+
           return;
         }
         currHost = host;
         currPort = port;
         currMessages = messages;
         messages.clear();
-#ifdef _WIN32
-        LeaveCriticalSection (&critical);
-#endif
+
+        ReleaseLock();
       }
 
       //Re-connect, if needed.
@@ -235,90 +322,12 @@ public:
         sockPort = currPort;
 
         //Close.
-#ifdef _WIN32
-        if (sock != INVALID_SOCKET) {
-          get_logfile() << "Closing old socket" << std::endl;
-          closesocket(sock);
-        } else {
-          //More Windows grumbling
-          get_logfile() << "Starting up WSAStartup" << std::endl;
-          if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) {
-            mainStatus = 666;
-            return;
-          }
-        }
-#else
-        if (sock != -1) {
-          get_logfile() << "Closing old socket" << std::endl;
-          ::close(sock);
-        }
-#endif
+        CloseOldSocket();
 
-        //New socket.
-#ifdef _WIN32
-        //Windows needs some hand-holding.
-        ZeroMemory( &hints, sizeof(hints) );
-        hints.ai_family = AF_UNSPEC;
-        hints.ai_socktype = SOCK_STREAM;
-        hints.ai_protocol = IPPROTO_TCP;
-
-        get_logfile() << "Requesting address info" << std::endl;
-        if (getaddrinfo(sockHost.c_str(), std::to_string(sockPort).c_str(), &hints, &my_res) != 0) {
-          WSACleanup();
-          mainStatus = 668;
+        //New socket, connect
+        if (!tryConnect()) {
           return;
         }
-#else
-        //Socket props.
-        server = sockaddr_in();
-        server.sin_addr.s_addr = inet_addr(sockHost.c_str());
-        server.sin_family = AF_INET;
-        server.sin_port = htons(sockPort);
-
-        //Socket
-        get_logfile() << "Requesting address info" << std::endl;
-        sock = ::socket(AF_INET , SOCK_STREAM , 0);
-        if (sock == -1) {
-          mainStatus = 2;
-          return;
-        }
-#endif
-
-        //Connect.
-#ifdef _WIN32
-        get_logfile() << "Trying a series of ptr_options" << std::endl;
-        for(ptr=my_res; ptr != NULL ;ptr=ptr->ai_next) {
-          get_logfile() << "...trying to make socket" << std::endl;
-          sock = ::socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
-          if (sock == INVALID_SOCKET) {
-              WSACleanup();
-              mainStatus = 667;
-              return;
-          }
-
-          get_logfile() << "...trying to connect" << std::endl;
-          if (::connect( sock, ptr->ai_addr, (int)ptr->ai_addrlen) == SOCKET_ERROR) {
-              closesocket(sock);
-              sock = INVALID_SOCKET;
-              continue;
-          }
-          get_logfile() << "...good!" << std::endl;
-          break;
-        }
-
-        if (sock == INVALID_SOCKET) {
-          get_logfile() << "Couldn't find a decent socket" << std::endl;
-          WSACleanup();
-          mainStatus = 669;
-          return;
-        }
-#else
-        get_logfile() << "Trying to connect to ONE socket, because Linux is awesome." << std::endl;
-        if (::connect(sock, reinterpret_cast<sockaddr*>(&server), sizeof(server)) < 0) {
-          mainStatus = 3;
-          return;
-        }
-#endif
 
         mainStatus = 0;
       }
@@ -326,77 +335,41 @@ public:
       //Send pending messages 
       for (const std::string& msg : currMessages) {
         get_logfile() << "Sending pending message: '" <<msg <<"'" << std::endl;
-#ifdef _WIN32
-        if(::send(sock, msg.c_str(), msg.length(), 0) == SOCKET_ERROR) {
-          closesocket(sock);
-          WSACleanup();
+        if (!trySend(msg)) {
           mainStatus = 4;
           return;
         }
-#else
-        if(::send(sock, msg.c_str(), msg.length(), 0) < 0) {
-          mainStatus = 4;
-          return;
-        }
-#endif
       }
 
       //Wait for notification of activity (which we will verify at the top of the loop).
       {
         get_logfile() << "Waiting for notification." << std::endl;
-#ifdef _WIN32
-//        EnterCriticalSection (&critical);
-#else
-        std::unique_lock<std::mutex> lock(mutex);
-#endif
 
+        GetLockForCondition();
 
-#ifdef _WIN32
+        //We could be more efficient with our condition variable on Linux, but this
+        // allows us to share more code with Windows.
         bool resDone = false;
         while (!resDone) {
-          //SleepConditionVariableCS (&condition, &critical, INFINITE);
-          WaitForSingleObject ( newDataEvent, INFINITE );
-#ifdef _WIN32
-        EnterCriticalSection (&critical);
-#endif
+          WaitForSignal();
+
+          GetLockForCheck();
+
           if (!running) { resDone=true; }
           if ((sockHost!=host) || (sockPort!=port)) { resDone=true; }
           if (!messages.empty()) { resDone=true; }
-#ifdef _WIN32
-        LeaveCriticalSection (&critical);
-#endif
+
+          ReleaseLockForCheck();
+
           get_logfile() << "Woke on notify; done is: " <<resDone << std::endl;
         }
-#else
-        condition.wait(lock, [this] { 
-          bool resDone = false;
-          if (!running) { resDone=true; }
-          if ((sockHost!=host) || (sockPort!=port)) { resDone=true; }
-          if (!messages.empty()) { resDone=true; }
-          get_logfile() << "Woke on notify; done is: " <<resDone << std::endl;
-          return resDone;
-        } );
-#endif
 
-#ifdef _WIN32
-//        LeaveCriticalSection (&critical);
-#endif
+        ReleaseLockForCondition();
       }
     }
 
     //Done
-#ifdef _WIN32
-    if (sock != INVALID_SOCKET) {
-      get_logfile() << "Closing socket" << std::endl;
-      closesocket(sock);
-      WSACleanup();
-    }
-#else
-    if (sock != -1) {
-      get_logfile() << "Closing socket" << std::endl;
-      ::close(sock);
-    }
-#endif
+    ThreadCleanup();
   }
 
 
@@ -404,17 +377,11 @@ private:
   //Current socket config. NOT thread-safe.
   std::string sockHost;
   int16_t sockPort;
-#ifdef _WIN32
-  addrinfo* my_res;
-  addrinfo* ptr;
-  addrinfo hints;
-  WSADATA wsaData;
 
-  SOCKET sock;
-#else
-  int sock;
-  sockaddr_in server;
-#endif
+  MemberVars;
+
+  //Detects certain errors.
+  bool initFailed;
 
   //Exit early if not running.
   bool running;
@@ -425,24 +392,7 @@ private:
 
   //Messages waiting to be sent.
   std::vector<std::string> messages;
-
-  //Main thread.
-#ifdef _WIN32
-  HANDLE mainThread;
-#else
-  std::thread mainThread;
-#endif
-
-  //Notifier.
-#ifdef _WIN32
-  CRITICAL_SECTION critical;
-  //CONDITION_VARIABLE condition;
-  HANDLE newDataEvent;
-#else
-  std::mutex mutex;
-  std::condition_variable condition;
-#endif
-
+  
   //Return value; status code.
   std::atomic<int> mainStatus;
 
@@ -451,23 +401,118 @@ private:
 };
 
 
-//Grumble, Windows
-#ifdef _WIN32
-  DWORD WINAPI __stdcall static_run(void* p_this) {
-    TcpSenderSlim* p_self = static_cast<TcpSenderSlim*>(p_this);
-    p_self->run();
-  }
-#endif
 
+#ifdef _WIN32
+
+//Grumble, Windows
+DWORD WINAPI __stdcall static_run(void* p_this) {
+  TcpSenderSlim* p_self = static_cast<TcpSenderSlim*>(p_this);
+  p_self->run();
+}
 
 void TcpSenderSlim::startMainThread()
 {
-#ifdef _WIN32
   mainThread = CreateThread(NULL, 0, &static_run, this, 0, NULL);
-#else
-  mainThread = std::thread();
-#endif
 }
+
+bool TcpSenderSlim::trySend(const std::string& msg)
+{
+  if(::send(sock, msg.c_str(), msg.length(), 0) == SOCKET_ERROR) {
+    closesocket(sock);
+    WSACleanup();
+    return false;
+  }
+  return true;
+}
+
+bool TcpSenderSlim::tryConnect()
+{
+  //Windows needs some hand-holding.
+  ZeroMemory( &hints, sizeof(hints) );
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_protocol = IPPROTO_TCP;
+
+  //Get address
+  get_logfile() << "Requesting address info" << std::endl;
+  if (getaddrinfo(sockHost.c_str(), std::to_string(sockPort).c_str(), &hints, &my_res) != 0) {
+    WSACleanup();
+    mainStatus = 668;
+    return false;
+  }
+
+  //New socket, connect
+  get_logfile() << "Trying a series of ptr_options" << std::endl;
+  for(ptr=my_res; ptr != NULL ;ptr=ptr->ai_next) {
+    get_logfile() << "...trying to make socket" << std::endl;
+    sock = ::socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
+    if (sock == INVALID_SOCKET) {
+        WSACleanup();
+        mainStatus = 667;
+        return false;
+    }
+
+    get_logfile() << "...trying to connect" << std::endl;
+    if (::connect( sock, ptr->ai_addr, (int)ptr->ai_addrlen) == SOCKET_ERROR) {
+        closesocket(sock);
+        sock = INVALID_SOCKET;
+        continue;
+    }
+    get_logfile() << "...good!" << std::endl;
+    break;
+  }
+
+  if (sock == INVALID_SOCKET) {
+    get_logfile() << "Couldn't find a decent socket" << std::endl;
+    WSACleanup();
+    mainStatus = 669;
+    return false;
+  }
+
+  return true;
+}
+
+#else //Linux
+
+void TcpSenderSlim::startMainThread()
+{
+  mainThread = std::thread(&TcpSenderSlim::run, this);
+}
+
+bool TcpSenderSlim::trySend(const std::string& msg)
+{
+  if (::send(sock, msg.c_str(), msg.length(), 0) < 0) {
+    return false;
+  }
+  return true;
+}
+
+bool TcpSenderSlim::tryConnect()
+{
+  //Socket props.
+  server = sockaddr_in();
+  server.sin_addr.s_addr = inet_addr(sockHost.c_str());
+  server.sin_family = AF_INET;
+  server.sin_port = htons(sockPort);
+
+  //Socket
+  get_logfile() << "Requesting address info" << std::endl;
+  sock = ::socket(AF_INET , SOCK_STREAM , 0);
+  if (sock == -1) {
+    mainStatus = 2;
+    return;
+  }
+
+  //Connect
+  get_logfile() << "Trying to connect to ONE socket, because Linux is awesome." << std::endl;
+  if (::connect(sock, reinterpret_cast<sockaddr*>(&server), sizeof(server)) < 0) {
+    mainStatus = 3;
+    return;
+  }
+}
+
+#endif
+
 
 
 
