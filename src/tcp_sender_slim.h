@@ -146,7 +146,7 @@
   //Send a signal (notification) to wake up the sleeper.
   //Or, wait for that signal.
   #define SendNotifySignal()   condition.notify_one();
-  #define WaitForSignal()      condition.wait(lock, [this] { return true; });
+  #define WaitForSignal()      condition.wait(lock);
 
 #endif
 
