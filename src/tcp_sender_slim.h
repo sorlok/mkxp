@@ -146,7 +146,7 @@
   //Send a signal (notification) to wake up the sleeper.
   //Or, wait for that signal.
   #define SendNotifySignal()   condition.notify_one();
-  #define WaitForSignal()      condition.wait(lock, [this] { return true; }
+  #define WaitForSignal()      condition.wait(lock, [this] { return true; });
 
 #endif
 
@@ -500,15 +500,17 @@ bool TcpSenderSlim::tryConnect()
   sock = ::socket(AF_INET , SOCK_STREAM , 0);
   if (sock == -1) {
     mainStatus = 2;
-    return;
+    return false;
   }
 
   //Connect
   get_logfile() << "Trying to connect to ONE socket, because Linux is awesome." << std::endl;
   if (::connect(sock, reinterpret_cast<sockaddr*>(&server), sizeof(server)) < 0) {
     mainStatus = 3;
-    return;
+    return false;
   }
+
+  return true;
 }
 
 #endif
