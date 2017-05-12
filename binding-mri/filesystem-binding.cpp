@@ -294,8 +294,8 @@ public:
 		}
 
 		//Try to over-ride the screenshot key.
-		ISteamScreenshots* ss = SteamScreenshots();
-		if (ss) { ss->HookScreenshots(true); }
+		//ISteamScreenshots* ss = SteamScreenshots();
+		//if (ss) { ss->HookScreenshots(true); }
 
 		return 0;
 	}

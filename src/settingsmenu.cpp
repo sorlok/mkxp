@@ -1122,7 +1122,7 @@ bool SettingsMenu::onEvent(const SDL_Event &event)
 		{
 		case SDL_SCANCODE_F1:
 		case SDL_SCANCODE_F2:
-		case SDL_SCANCODE_F12:
+		case SDL_SCANCODE_F10:
 			return true;
 		default:
 			break;

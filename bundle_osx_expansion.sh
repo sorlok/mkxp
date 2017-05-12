@@ -154,7 +154,7 @@ rm -rf $APPNAME/Contents/Resources/Graphics/.hg
 
 
 #LATER
-#cp -r $ORIGRES/steam_appid.txt $APPNAME/Contents/Resources/
+cp -r $ORIGRES/steam_appid.txt $APPNAME/Contents/Resources/
 
 
 #We need a build date...
@@ -167,7 +167,7 @@ cp -r Game.ini.default $APPNAME/Contents/Resources/Game.ini
 
 #Do Valve's weird dance.
 echo "Steamifying..."
-appid=448170
+appid=$(head -n 1 $ORIGRES/steam_appid.txt)
 /Applications/ContentPrep.app/Contents/MacOS/contentprep.py --console --source=$APPNAME  --dest=$BNDLFLDR  --noscramble  --appid=$appid
 
 #Now, do a sanity check.
