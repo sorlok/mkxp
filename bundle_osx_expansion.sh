@@ -8,6 +8,16 @@ BNDLFLDR="./bundle"  #Where we put the final app
 APPBINARY="$APPNAME/Contents/MacOS/mkxp"
 echo "Bundling $APPNAME"
 
+#Special case for demo
+if [ "$1" == "demo" ]; then
+  echo "Mode: Demo"
+elif [ "$1" == "game" ]; then
+  echo "Mode: Game"
+else
+  echo "ERROR: Run with arugment 'game' or 'demo'"
+  exit 1
+fi
+
 
 #Prepare a bundle for your App.
 rm -rf $APPNAME
@@ -153,9 +163,12 @@ rm -rf $APPNAME/Contents/Resources/Graphics/.hg
 
 
 
-#LATER
-cp -r $ORIGRES/steam_appid.txt $APPNAME/Contents/Resources/
-
+#Do the right thing
+if [ "$1" == "demo" ]; then
+  echo "449190" >$APPNAME/Contents/Resources/steam_appid.txt
+else
+  cp -r $ORIGRES/steam_appid.txt $APPNAME/Contents/Resources/
+fi
 
 #We need a build date...
 SPECIAL_VERSION="2.1.$(date +%Y-%m-%d | sed "s|-||g")"
@@ -167,7 +180,7 @@ cp -r Game.ini.default $APPNAME/Contents/Resources/Game.ini
 
 #Do Valve's weird dance.
 echo "Steamifying..."
-appid=$(head -n 1 $ORIGRES/steam_appid.txt)
+appid=$(head -n 1 $APPNAME/Contents/Resources/steam_appid.txt)
 /Applications/ContentPrep.app/Contents/MacOS/contentprep.py --console --source=$APPNAME  --dest=$BNDLFLDR  --noscramble  --appid=$appid
 
 #Now, do a sanity check.
