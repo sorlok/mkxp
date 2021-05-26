@@ -49,7 +49,6 @@
 #include <sstream>
 #include <functional>
 
-#include "steam_api.h"
 #include "ruby/encoding.h"
 #include "ruby/intern.h"
 
@@ -272,6 +271,7 @@ RB_METHOD(ppWriteString)
 ///////////////////////////////////////////////////////////////////////////////////////
 
 //This class holds everything about Steam, and is used as a broker with the Steam API from within RGSS.
+/*
 class MySteamSuperClass {
 public:
 	MySteamSuperClass() : waitingOnSteam(false), error(false), findLeaderHdl(0), uploadLeaderHdl(0) {
@@ -722,15 +722,16 @@ private:
 	SteamAPICall_t findLeaderHdl;
 	SteamAPICall_t uploadLeaderHdl;
 
-};
+};*/
 
 
 
 //Get our Steam singleton instance.
+/*
 MySteamSuperClass& get_steam() {
 	static MySteamSuperClass my_steam_super;
 	return my_steam_super;
-}
+}*/
 
 
 /////////////////////
@@ -750,7 +751,7 @@ RB_METHOD(steamInit)
 {
 	int res = 1;
 
-	GUARD_EXC( res = get_steam().init(); )
+	//GUARD_EXC( res = get_steam().init(); )
 
 	return rb_int_new(res);
 }
@@ -759,7 +760,7 @@ RB_METHOD(steamShutdown)
 {
 	int res = 1;
 
-	GUARD_EXC( res = get_steam().shutdown(); )
+	//GUARD_EXC( res = get_steam().shutdown(); )
 
 	return rb_int_new(res);
 }
@@ -768,7 +769,7 @@ RB_METHOD(steamSpecialCode)
 {
 	int res = 1;
 
-	GUARD_EXC( res = get_steam().getError(); )
+	//GUARD_EXC( res = get_steam().getError(); )
 
 	return rb_int_new(res);
 }
@@ -777,7 +778,7 @@ RB_METHOD(steamTick)
 {
 	int res = 1;
 
-	GUARD_EXC( res = get_steam().doNextRequest(); )
+	//GUARD_EXC( res = get_steam().doNextRequest(); )
 
 	return rb_int_new(res);
 }
@@ -786,11 +787,12 @@ RB_METHOD(steamFindLeaderboard)
 {
 	int res = 0;
 
-	const char* leaderboardName = "";
+	/*const char* leaderboardName = "";
 
 	rb_get_args(argc, argv, "z|", &leaderboardName RB_ARG_END);
 
-	GUARD_EXC( /*res =*/ get_steam().findLeaderboard(leaderboardName); )
+	GUARD_EXC(  get_steam().findLeaderboard(leaderboardName); )
+	*/
 
 	return rb_int_new(res);
 }
@@ -799,6 +801,7 @@ RB_METHOD(steamSyncLeaderboard)
 {
 	int res = 0;
 
+	/*
 	const char* leaderboardName = "";
 	const char* leaderboardValue = "";
 
@@ -811,8 +814,8 @@ RB_METHOD(steamSyncLeaderboard)
 		get_steam().get_logfile() << "ERROR, leaderboard couldn't parse value as int: \"" << leaderboardValue << " \"" << std::endl;
 		res = 1;
 	} else {
-		GUARD_EXC( /*res =*/ get_steam().syncLeaderboard(leaderboardName, leadVal32); )
-	}
+		GUARD_EXC(  get_steam().syncLeaderboard(leaderboardName, leadVal32); )
+	}*/
 
 	return rb_int_new(res);
 }
@@ -820,12 +823,14 @@ RB_METHOD(steamSyncLeaderboard)
 RB_METHOD(steamSyncAchievement)
 {
 	int res = 0;
+	/*
 
 	const char* achievementName = "";
 
 	rb_get_args(argc, argv, "z|", &achievementName RB_ARG_END);
 
-	GUARD_EXC( /*res =*/ get_steam().syncAchievement(achievementName); )
+	GUARD_EXC( get_steam().syncAchievement(achievementName); )
+	*/
 
 	return rb_int_new(res);
 }
@@ -835,7 +840,7 @@ RB_METHOD(steamGetUserId)
 {
 	std::string res;
 
-	GUARD_EXC( res = get_steam().getUserId(); )
+	//GUARD_EXC( res = get_steam().getUserId(); )
 
 	return rb_str_new_cstr(res.empty() ? "0" : res.c_str());
 }
@@ -845,7 +850,7 @@ RB_METHOD(steamGetNumEarnedAchieves)
 {
 	int res = 0;
 
-	GUARD_EXC( res = get_steam().getNumEarnedAchieves(); )
+	//GUARD_EXC( res = get_steam().getNumEarnedAchieves(); )
 
 	return rb_int_new(res);
 }

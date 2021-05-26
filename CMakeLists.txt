@@ -209,17 +209,17 @@ elseif(LINUX)
   #More static hackery
   if (LIN32_ONLY)
     set(RUBY_STATIC_LIB2
-      "/usr/lib/i386-linux-gnu/libfreetype.a"
-      "/usr/lib/i386-linux-gnu/libsigc-2.0.a"
-      "/usr/lib/i386-linux-gnu/libpixman-1.a"
-      "/usr/lib/i386-linux-gnu/libboost_program_options.a"
-      "/usr/lib/i386-linux-gnu/libvorbisfile.a"
-      "/usr/lib/i386-linux-gnu/libvorbis.a"
-      "/usr/lib/i386-linux-gnu/libogg.a"
-      "/usr/lib/i386-linux-gnu/libcrypt.a"
-      "/usr/lib/i386-linux-gnu/libjpeg.a"
-      "/usr/lib/i386-linux-gnu/libpng.a"
-      "/usr/lib/i386-linux-gnu/libz.a"
+      "/usr/lib/arm-linux-gnueabihf/libfreetype.a"
+      "/usr/lib/arm-linux-gnueabihf/libsigc-2.0.a"
+      "/usr/lib/arm-linux-gnueabihf/libpixman-1.a"
+      "/usr/lib/arm-linux-gnueabihf/libboost_program_options.a"
+      "/usr/lib/arm-linux-gnueabihf/libvorbisfile.a"
+      "/usr/lib/arm-linux-gnueabihf/libvorbis.a"
+      "/usr/lib/arm-linux-gnueabihf/libogg.a"
+      "/usr/lib/arm-linux-gnueabihf/libcrypt.a"
+      "/usr/lib/arm-linux-gnueabihf/libjpeg.a"
+      "/usr/lib/arm-linux-gnueabihf/libpng.a"
+      "/usr/lib/arm-linux-gnueabihf/libz.a"
     )
   else()
     set(RUBY_STATIC_LIB2
@@ -619,7 +619,6 @@ link_directories(
 	${SDL2_LIBRARY_DIRS} # Blindly assume other SDL bits are in same directory
 	${Boost_LIBRARY_DIR}
 	${MRI_LIBDIR}
-        ${STEAM_LIBRARY_DIR}
 )
 
 add_executable(${PROJECT_NAME} MACOSX_BUNDLE
@@ -645,7 +644,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	${VORBISFILE_INCLUDE_DIRS}
 	${FLUID_INCLUDE_DIRS}
 	${OPENAL_INCLUDE_DIR}
-	"steamworks_133b/"
 )
 if (WINDOWS)
   if (WIN32_ONLY)
@@ -673,10 +671,12 @@ target_link_libraries(${PROJECT_NAME}
 	${FLUID_LIBRARIES}
 	${OPENAL_LIBRARY}
 	${ZLIB_LIBRARY}
-	${STEAM_LIBRARY}
 
 	${PLATFORM_LIBRARIES}
         ${RUBY_STATIC_LIB}
+	-ldl
+	-lpthread
+	-lrt
 )
 
 
