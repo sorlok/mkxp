@@ -175,6 +175,8 @@ else()
   set(RUBY_STATIC_LIB  "/usr/local/lib/libruby-static.a")
 endif()
 
+set(DISPMANX_LIBS "-L/opt/vc/lib/ -lbcm_host -lvcos -lvchiq_arm -lpthread")
+
 #Windows adds a whole bunch of garbage
 if (WINDOWS)
   if (WIN32_ONLY)
@@ -674,6 +676,7 @@ target_link_libraries(${PROJECT_NAME}
 
 	${PLATFORM_LIBRARIES}
         ${RUBY_STATIC_LIB}
+	${DISPMANX_LIBS}
 	-ldl
 	-lpthread
 	-lrt
