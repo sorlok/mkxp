@@ -47,7 +47,6 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdint.h>
-#include <limits.h>
 
 
 #ifdef __APPLE__
@@ -163,11 +162,7 @@ struct SharedStatePrivate
 		}
 
 		// Add cwd; for some reason '.' fails on RPI
-		std::string cwd = ".";
-		char buff[PATH_MAX];
-		if (getcwd(buff, sizeof(buff)) != NULL) {
-			cwd = buff;
-		}
+		std::string cwd = getenv("PWD");
 		fileSystem.addPath(cwd.c_str());
 
 		for (size_t i = 0; i < config.rtps.size(); ++i)
