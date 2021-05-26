@@ -339,6 +339,8 @@ RGSS_openArchive(PHYSFS_Io *io, const char *, int forWrite, int* claimed)
 	/* Version 1 */
 	if (!verifyHeader(io, 1))
 		return 0;
+	else
+		*claimed = 1;
 
 	RGSS_archiveData *data = new RGSS_archiveData;
 	data->archiveIo = io;
@@ -386,7 +388,6 @@ RGSS_openArchive(PHYSFS_Io *io, const char *, int forWrite, int* claimed)
 		io->seek(io, entry.offset + entry.size);
 	}
 
-	*claimed = 1; // I think?
 	return data;
 }
 
@@ -400,7 +401,7 @@ RGSS_enumerateFiles(void *opaque, const char *dirname,
 	std::string _dirname(dirname);
 
 	if (!data->dirHash.contains(_dirname))
-		return PHYSFS_ENUM_OK;
+		return PHYSFS_ENUM_STOP;
 
 	const BoostSet<std::string> &entries = data->dirHash[_dirname];
 
@@ -546,6 +547,8 @@ RGSS3_openArchive(PHYSFS_Io *io, const char *, int forWrite, int* claimed)
 	/* Version 3 */
 	if (!verifyHeader(io, 3))
 		return 0;
+	else
+		*claimed = 1;
 
 	uint32_t baseMagic;
 
@@ -610,7 +613,6 @@ RGSS3_openArchive(PHYSFS_Io *io, const char *, int forWrite, int* claimed)
 		return 0;
 	}
 
-	*claimed = 1; // I think?
 	return data;
 }
 
