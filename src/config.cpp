@@ -314,6 +314,11 @@ void Config::readGameINI()
 	GUARD_ALL( game.title = vm["Game.Title"].as<std::string>(); );
 	GUARD_ALL( game.scripts = vm["Game.Scripts"].as<std::string>(); );
 
+        // TODO: Boost's po file  processing is not working for some reason.
+        game.title = "Last Dream World Unknown";
+        game.scripts = "Data\\Scripts.rvdata";
+
+
 	strReplace(game.scripts, '\\', '/');
 
 #ifdef INI_ENCODING
