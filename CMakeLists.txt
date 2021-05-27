@@ -215,7 +215,6 @@ elseif(LINUX)
       "/usr/lib/i386-linux-gnu/libboost_program_options.a"
       "/usr/lib/i386-linux-gnu/libvorbisfile.a"
       "/usr/lib/i386-linux-gnu/libvorbis.a"
-      "/usr/lib/i386-linux-gnu/libogg.a"
       "/usr/lib/i386-linux-gnu/libcrypt.a"
       "/usr/lib/i386-linux-gnu/libjpeg.a"
       "/usr/lib/i386-linux-gnu/libpng.a"
@@ -229,7 +228,6 @@ elseif(LINUX)
       "/usr/lib/x86_64-linux-gnu/libboost_program_options.a"
       "/usr/lib/x86_64-linux-gnu/libvorbisfile.a"
       "/usr/lib/x86_64-linux-gnu/libvorbis.a"
-      "/usr/lib/x86_64-linux-gnu/libogg.a"
       "/usr/lib/x86_64-linux-gnu/libcrypt.a"
       "/usr/lib/x86_64-linux-gnu/libjpeg.a"
       "/usr/lib/x86_64-linux-gnu/libpng.a"
@@ -677,6 +675,12 @@ target_link_libraries(${PROJECT_NAME}
 
 	${PLATFORM_LIBRARIES}
         ${RUBY_STATIC_LIB}
+
+	-logg
+	-lFLAC
+        -ldl
+        -lpthread
+        -lrt
 )
 
 
