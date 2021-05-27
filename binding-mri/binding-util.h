@@ -66,13 +66,9 @@ raiseRbExc(const Exception &exc);
 	extern rb_data_type_t Klass##Type
 
 /* 2.1 has added a new field (flags) to rb_data_type_t */
+/* We're turning this on by default from now on, rather than do 3.0 math */
 #include <ruby/version.h>
-#if RUBY_API_VERSION_MINOR > 0
-/* TODO: can mkxp use RUBY_TYPED_FREE_IMMEDIATELY here? */
 #define DEF_TYPE_FLAGS 0
-#else
-#define DEF_TYPE_FLAGS
-#endif
 
 #define DEF_TYPE_CUSTOMNAME_AND_FREE(Klass, Name, Free) \
 	rb_data_type_t Klass##Type = { \
