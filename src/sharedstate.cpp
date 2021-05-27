@@ -161,7 +161,8 @@ struct SharedStatePrivate
 			fclose(tmp);
 		}
 
-		fileSystem.addPath(".");
+		std::string cwd = getenv("PWD");
+		fileSystem.addPath(cwd.c_str());
 
 		for (size_t i = 0; i < config.rtps.size(); ++i)
 			fileSystem.addPath(config.rtps[i].c_str());
